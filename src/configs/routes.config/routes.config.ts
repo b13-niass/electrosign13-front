@@ -7,51 +7,48 @@ export const publicRoutes: Routes = [...authRoute]
 export const protectedRoutes: Routes = [
     {
         key: 'home',
-        path: '/home',
+        path: '/dashboard',
         component: lazy(() => import('@/views/Home')),
         authority: [],
     },
-    /** Example purpose only, please remove */
     {
-        key: 'singleMenuItem',
-        path: '/single-menu-view',
-        component: lazy(() => import('@/views/demo/SingleMenuView')),
+        key: 'utilisateurMenuItem',
+        path: '/utilisateurs',
+        component: lazy(() => import('@/views/pages/UtilisateurView')),
         authority: [],
     },
     {
-        key: 'collapseMenu.item1',
-        path: '/collapse-menu-item-view-1',
-        component: lazy(() => import('@/views/demo/CollapseMenuItemView1')),
+        key: 'demandeMenu',
+        path: '/demandes',
+        component: lazy(() => import('@/views/pages/DemandeView')),
         authority: [],
     },
     {
-        key: 'collapseMenu.item2',
-        path: '/collapse-menu-item-view-2',
-        component: lazy(() => import('@/views/demo/CollapseMenuItemView2')),
+        key: 'documentMenu',
+        path: '/documents',
+        component: lazy(() => import('@/views/pages/DocumentView')),
         authority: [],
     },
     {
-        key: 'groupMenu.single',
-        path: '/group-single-menu-item-view',
+        key: 'createDemandeMenu',
+        path: '/create-demande',
         component: lazy(() =>
-            import('@/views/demo/GroupSingleMenuItemView')
+            import('@/views/pages/CreateDemandeView')
         ),
         authority: [],
     },
     {
-        key: 'groupMenu.collapse.item1',
-        path: '/group-collapse-menu-item-view-1',
-        component: lazy(() =>
-            import('@/views/demo/GroupCollapseMenuItemView1')
-        ),
+        key: 'organigrammeMenu',
+        path: '/organigrammes',
+        component: lazy(() => import('@/views/pages/OrganigrammeView')),
         authority: [],
     },
     {
-        key: 'groupMenu.collapse.item2',
-        path: '/group-collapse-menu-item-view-2',
+        key: 'parametreMenu',
+        path: '/parametres',
         component: lazy(() =>
-            import('@/views/demo/GroupCollapseMenuItemView2')
+            import('@/views/pages/ParametreView')
         ),
         authority: [],
-    },
+    }
 ]

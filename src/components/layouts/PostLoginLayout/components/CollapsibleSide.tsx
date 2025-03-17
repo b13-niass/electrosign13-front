@@ -33,7 +33,7 @@ const CollapsibleSide = ({ children }: CommonProps) => {
                             </>
                         }
                     />
-                    <div className="h-full flex flex-auto flex-col">
+                    <div className="h-full flex flex-auto  bg-gray-100 flex-col">
                         {children}
                     </div>
                 </div>

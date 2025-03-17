@@ -1,4 +1,4 @@
-import { useMemo, lazy } from 'react'
+import { useMemo, lazy, ReactElement } from 'react'
 import type { CommonProps } from '@/@types/common'
 import type { LazyExoticComponent } from 'react'
 
@@ -6,7 +6,7 @@ type LayoutType = 'simple'
 
 type Layouts = Record<
     LayoutType,
-    LazyExoticComponent<<T extends CommonProps>(props: T) => JSX.Element>
+    LazyExoticComponent<<T extends CommonProps>(props: T) => ReactElement>
 >
 
 const currentLayoutType: LayoutType = 'simple'

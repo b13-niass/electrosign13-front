@@ -13,6 +13,7 @@ const PreLoginLayout = ({ children }: CommonProps) => {
     return (
         <div className="flex flex-auto flex-col h-[100vh]">
             {isAuthPath ? <AuthLayout>{children}</AuthLayout> : children}
+
         </div>
     )
 }

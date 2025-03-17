@@ -8,6 +8,7 @@ import appConfig from '@/configs/app.config'
 import { useAuth } from '@/auth'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import type { LayoutType } from '@/@types/theme'
+import { useEffect, useState } from 'react'
 
 interface ViewsProps {
     pageContainerType?: 'default' | 'gutterless' | 'contained'
@@ -34,7 +35,7 @@ const AllRoutes = (props: AllRoutesProps) => {
                         path={route.path}
                         element={
                             <AuthorityGuard
-                                userAuthority={user.authority}
+                                userAuthority={user.rolesLibelle}
                                 authority={route.authority}
                             >
                                 <PageContainer {...props} {...route.meta}>
@@ -52,6 +53,7 @@ const AllRoutes = (props: AllRoutesProps) => {
             </Route>
             <Route path="/" element={<PublicRoute />}>
                 {publicRoutes.map((route) => (
+
                     <Route
                         key={route.path}
                         path={route.path}

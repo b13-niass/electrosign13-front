@@ -8,9 +8,10 @@ import type {
     SignInResponse,
     SignUpResponse,
 } from '@/@types/auth'
+import { ApiResponseFormat } from '@/@types'
 
 export async function apiSignIn(data: SignInCredential) {
-    return ApiService.fetchDataWithAxios<SignInResponse>({
+    return ApiService.fetchDataWithAxios<ApiResponseFormat<SignInResponse>>({
         url: endpointConfig.signIn,
         method: 'post',
         data,

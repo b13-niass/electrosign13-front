@@ -75,23 +75,26 @@ function AuthProvider({ children }: AuthProviderProps) {
     const signIn = async (values: SignInCredential): AuthResult => {
         try {
             const resp = await apiSignIn(values)
+            console.log(resp)
             if (resp) {
-                handleSignIn({ accessToken: resp.token }, resp.user)
+                handleSignIn({ accessToken: resp.data.access_token }, resp.data.user)
                 redirect()
                 return {
-                    status: 'success',
-                    message: '',
+                    status: 'OK',
+                    message: "connection established",
                 }
             }
             return {
-                status: 'failed',
+                status: 'KO',
                 message: 'Unable to sign in',
             }
             // eslint-disable-next-line  @typescript-eslint/no-explicit-any
         } catch (errors: any) {
+            console.log(errors)
             return {
-                status: 'failed',
-                message: errors?.response?.data?.message || errors.toString(),
+                status: 'KO',
+                message: "l'email ou le mot de passe est incorrecte",
+                // message: errors?.response?.data?.message || errors.toString(),
             }
         }
     }
@@ -100,21 +103,21 @@ function AuthProvider({ children }: AuthProviderProps) {
         try {
             const resp = await apiSignUp(values)
             if (resp) {
-                handleSignIn({ accessToken: resp.token }, resp.user)
+                handleSignIn({ accessToken: resp.access_token }, resp.user)
                 redirect()
                 return {
-                    status: 'success',
+                    status: 'OK',
                     message: '',
                 }
             }
             return {
-                status: 'failed',
+                status: 'KO',
                 message: 'Unable to sign up',
             }
             // eslint-disable-next-line  @typescript-eslint/no-explicit-any
         } catch (errors: any) {
             return {
-                status: 'failed',
+                status: 'KO',
                 message: errors?.response?.data?.message || errors.toString(),
             }
         }

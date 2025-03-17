@@ -43,8 +43,8 @@ const SignInForm = (props: SignInFormProps) => {
         control,
     } = useForm<SignInFormSchema>({
         defaultValues: {
-            email: 'admin-01@ecme.com',
-            password: '123Qwe',
+            email: '',
+            password: '',
         },
         resolver: zodResolver(validationSchema),
     })
@@ -58,8 +58,8 @@ const SignInForm = (props: SignInFormProps) => {
             setSubmitting(true)
 
             const result = await signIn({ email, password })
-
-            if (result?.status === 'failed') {
+            console.log(result)
+            if (result?.status === 'KO') {
                 setMessage?.(result.message)
             }
         }

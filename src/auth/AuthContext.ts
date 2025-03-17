@@ -3,13 +3,13 @@ import type {
     SignInCredential,
     SignUpCredential,
     AuthResult,
-    User,
+    UserType,
     OauthSignInCallbackPayload,
 } from '@/@types/auth'
 
 type Auth = {
     authenticated: boolean
-    user: User
+    user: UserType
     signIn: (values: SignInCredential) => AuthResult
     signUp: (values: SignUpCredential) => AuthResult
     signOut: () => void
@@ -20,8 +20,9 @@ type Auth = {
 
 const defaultFunctionPlaceHolder = async (): AuthResult => {
     await new Promise((resolve) => setTimeout(resolve, 0))
+    console.log(1)
     return {
-        status: '',
+        status: 'KO',
         message: '',
     }
 }

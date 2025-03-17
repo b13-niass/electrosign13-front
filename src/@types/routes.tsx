@@ -1,11 +1,11 @@
 import { LayoutType } from './theme'
-import type { LazyExoticComponent, ReactNode } from 'react'
+import { LazyExoticComponent, ReactElement, ReactNode } from 'react'
 
 export type PageHeaderProps = {
-    title?: string | ReactNode | LazyExoticComponent<() => JSX.Element>
+    title?: string | ReactNode | LazyExoticComponent<() => ReactElement>
     description?: string | ReactNode
     contained?: boolean
-    extraHeader?: string | ReactNode | LazyExoticComponent<() => JSX.Element>
+    extraHeader?: string | ReactNode | LazyExoticComponent<() => ReactElement>
 }
 
 export interface Meta {
@@ -19,7 +19,7 @@ export interface Meta {
 export type Route = {
     key: string
     path: string
-    component: LazyExoticComponent<<T extends Meta>(props: T) => JSX.Element>
+    component: LazyExoticComponent<<T extends Meta>(props: T) => ReactElement>
     authority: string[]
     meta?: Meta
 }

@@ -1,9 +1,9 @@
-import type { LazyExoticComponent } from 'react'
+import { LazyExoticComponent, ReactElement } from 'react'
 
 export type DocRouteNav = {
     path: string
     label: string
-    component: LazyExoticComponent<() => JSX.Element>
+    component: LazyExoticComponent<() => ReactElement>
 }
 
 export type DocumentationRoute = {
