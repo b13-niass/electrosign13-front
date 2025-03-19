@@ -17,7 +17,7 @@ const dropdownItemList: DropdownList[] = [
 ]
 
 const _UserDropdown = () => {
-    const { avatar, userName, email } = useSessionUser((state) => state.user)
+    const { photo, nom, prenom, email } = useSessionUser((state) => state.user)
 
     const { signOut } = useAuth()
 
@@ -26,7 +26,7 @@ const _UserDropdown = () => {
     }
 
     const avatarProps = {
-        ...(avatar ? { src: avatar } : { icon: <PiUserDuotone /> }),
+        ...(photo ? { src: photo } : { icon: <PiUserDuotone /> }),
     }
 
     return (
@@ -45,7 +45,7 @@ const _UserDropdown = () => {
                     <Avatar {...avatarProps} />
                     <div>
                         <div className="font-bold text-gray-900 dark:text-gray-100">
-                            {userName || 'Anonymous'}
+                            {prenom+" "+ nom || 'Anonymous'}
                         </div>
                         <div className="text-xs">
                             {email || 'No email available'}
@@ -76,7 +76,7 @@ const _UserDropdown = () => {
                 <span className="text-xl">
                     <PiSignOutDuotone />
                 </span>
-                <span>Sign Out</span>
+                <span>Déconnexion</span>
             </Dropdown.Item>
         </Dropdown>
     )

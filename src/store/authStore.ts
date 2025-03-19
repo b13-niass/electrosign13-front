@@ -3,7 +3,7 @@ import appConfig from '@/configs/app.config'
 import { TOKEN_NAME_IN_STORAGE } from '@/constants/api.constant'
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
-import type { User } from '@/@types/auth'
+import { UserType } from '@/@types/auth'
 
 type Session = {
     signedIn: boolean
@@ -11,12 +11,12 @@ type Session = {
 
 type AuthState = {
     session: Session
-    user: User
+    user: UserType
 }
 
 type AuthAction = {
     setSessionSignedIn: (payload: boolean) => void
-    setUser: (payload: User) => void
+    setUser: (payload: UserType) => void
 }
 
 const getPersistStorage = () => {
@@ -36,10 +36,17 @@ const initialState: AuthState = {
         signedIn: false,
     },
     user: {
-        avatar: '',
-        userName: '',
+        id: '',
+        nom: '',
+        prenom: '',
         email: '',
-        authority: [],
+        photo: '',
+        telephone: '',
+        publicKey: '',
+        mySignature: '',
+        fonction: '',
+        rolesLibelle: [],
+        roles: []
     },
 }
 

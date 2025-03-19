@@ -10,7 +10,7 @@ import type {
     SignUpCredential,
     AuthResult,
     OauthSignInCallbackPayload,
-    User,
+    UserType,
     Token,
 } from '@/@types/auth'
 import type { ReactNode, Ref } from 'react'
@@ -38,6 +38,7 @@ function AuthProvider({ children }: AuthProviderProps) {
     const signedIn = useSessionUser((state) => state.session.signedIn)
     const user = useSessionUser((state) => state.user)
     const setUser = useSessionUser((state) => state.setUser)
+    const navigate = useNavigate();
     const setSessionSignedIn = useSessionUser(
         (state) => state.setSessionSignedIn,
     )
@@ -57,7 +58,7 @@ function AuthProvider({ children }: AuthProviderProps) {
         )
     }
 
-    const handleSignIn = (tokens: Token, user?: User) => {
+    const handleSignIn = (tokens: Token, user?: UserType) => {
         setToken(tokens.accessToken)
         setSessionSignedIn(true)
 
@@ -124,12 +125,12 @@ function AuthProvider({ children }: AuthProviderProps) {
     }
 
     const signOut = async () => {
-        try {
-            await apiSignOut()
-        } finally {
+        // try {
+        //     // await apiSignOut()
+        // } finally {
             handleSignOut()
             navigatorRef.current?.navigate(appConfig.unAuthenticatedEntryPath)
-        }
+        // }
     }
     const oAuthSignIn = (
         callback: (payload: OauthSignInCallbackPayload) => void,

@@ -19,6 +19,8 @@ import { CalendarIcon } from 'lucide-react'
 import { Calendar } from '@/components/shadcn-ui/calendar'
 import { fr } from 'date-fns/locale'
 import { PiTrash, PiTrashDuotone } from 'react-icons/pi'
+import PDFViewer from '@/components/ui/PDFViewer'
+import WebViewerPdf from '@/components/ui/WebViewerPdf'
 
 interface CreateDemandeFormProps extends CommonProps {
     disableSubmit?: boolean
@@ -81,7 +83,7 @@ const CreateDemandeView = () => {
 
     const onUploadFile = (file: File) => {
         setFileUpload(file);
-        console.log(file);
+        // console.log(file);
     }
 
     const options: Option[] = [
@@ -183,7 +185,7 @@ const CreateDemandeView = () => {
                     </div>
                     <div className="border rounded-2xl border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800
                      md:w-2/4 gap-4 flex flex-col bg-[#FFFFFF]">
-                        La
+                        <WebViewerPdf file={fileUpload} />
                     </div>
                 </div>
                 <div

@@ -9,25 +9,31 @@ export const protectedRoutes: Routes = [
         key: 'home',
         path: '/dashboard',
         component: lazy(() => import('@/views/Home')),
-        authority: [],
+        authority: ["SIGNATAIRE", "APPROBATEUR", "INITIATEUR"],
     },
     {
         key: 'utilisateurMenuItem',
         path: '/utilisateurs',
         component: lazy(() => import('@/views/pages/UtilisateurView')),
-        authority: [],
+        authority: ["ADMIN"],
     },
     {
         key: 'demandeMenu',
         path: '/demandes',
         component: lazy(() => import('@/views/pages/DemandeView')),
-        authority: [],
+        authority: ["SIGNATAIRE", "APPROBATEUR", "INITIATEUR"],
     },
+    // {
+    //     key: 'documentMenu',
+    //     path: '/documents',
+    //     component: lazy(() => import('@/views/pages/DocumentView')),
+    //     authority: [],
+    // },
     {
-        key: 'documentMenu',
-        path: '/documents',
-        component: lazy(() => import('@/views/pages/DocumentView')),
-        authority: [],
+        key: 'signerDemandeMenu',
+        path: '/signer-demande/:documentId',
+        component: lazy(() => import('@/views/pages/SignerDemandeView')),
+        authority: ["SIGNATAIRE"],
     },
     {
         key: 'createDemandeMenu',
@@ -35,13 +41,13 @@ export const protectedRoutes: Routes = [
         component: lazy(() =>
             import('@/views/pages/CreateDemandeView')
         ),
-        authority: [],
+        authority: ["SIGNATAIRE", "APPROBATEUR", "INITIATEUR"],
     },
     {
         key: 'organigrammeMenu',
         path: '/organigrammes',
         component: lazy(() => import('@/views/pages/OrganigrammeView')),
-        authority: [],
+        authority: ["ADMIN"],
     },
     {
         key: 'parametreMenu',
@@ -49,6 +55,6 @@ export const protectedRoutes: Routes = [
         component: lazy(() =>
             import('@/views/pages/ParametreView')
         ),
-        authority: [],
+        authority: ["ADMIN"],
     }
 ]

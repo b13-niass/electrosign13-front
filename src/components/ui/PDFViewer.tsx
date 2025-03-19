@@ -6,8 +6,7 @@ import { Document, Page, pdfjs } from "react-pdf"
 import "react-pdf/dist/esm/Page/AnnotationLayer.css"
 import "react-pdf/dist/esm/Page/TextLayer.css"
 
-// Initialize pdfjs worker
-pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`
+pdfjs.GlobalWorkerOptions.workerSrc = `/home/noone/Desktop/sonatel_academy/projet_final/electrosign13-front/node_modules/pdfjs-dist/build/pdf.worker.min.mjs`
 
 interface PDFViewerProps {
     file?: File | null
@@ -34,26 +33,19 @@ export default function PDFViewer({ file }: PDFViewerProps) {
     }
 
     return (
-        <div className="border border-gray-300 rounded-lg w-[452px] h-[617px] overflow-hidden bg-white relative">
+        <div className="rounded-2xl w-full h-[617px] overflow-hidden bg-white relative">
             {!url ? (
                 <div className="flex flex-col items-center justify-center h-full p-6 text-center">
                     <div className="w-20 h-20 mb-4 bg-gray-100 rounded-full flex items-center justify-center">
                         <FileText className="w-10 h-10 text-gray-400" />
                     </div>
                     <h3 className="text-lg font-medium mb-2">Prévisualisation PDF</h3>
-                    <p className="text-sm text-gray-500 mb-4">Uploadez un fichier PDF pour le prévisualiser ici</p>
-                    <div className="flex items-center justify-center w-full">
-                        <div className="flex flex-col items-center justify-center w-full max-w-xs p-4 border-2 border-dashed border-gray-300 rounded-lg">
-                            <Upload className="w-6 h-6 text-gray-400 mb-2" />
-                            <p className="text-xs text-gray-500">Glissez-déposez ou sélectionnez un fichier</p>
-                        </div>
-                    </div>
                 </div>
             ) : (
                 <div className="h-full flex flex-col">
                     <div className="flex-1 overflow-auto">
                         <Document file={url} onLoadSuccess={onDocumentLoadSuccess} className="flex justify-center">
-                            <Page pageNumber={pageNumber} width={440} renderTextLayer={false} />
+                            <Page pageNumber={pageNumber} width={444} renderTextLayer={false} />
                         </Document>
                     </div>
                     {numPages && numPages > 1 && (
