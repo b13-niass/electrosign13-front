@@ -1,4 +1,4 @@
-import * as React from "react"
+"use client"
 import {
     type ColumnDef,
     type ColumnFiltersState,
@@ -30,7 +30,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/shadcn-ui/table"
 import { Badge } from "@/components/shadcn-ui/badge"
 import { cn } from "@/lib/utils"
-import { Link } from 'react-router-dom'
+import { Link } from "react-router-dom"
+import { type ChangeEvent, useEffect, useRef, useState } from "react"
+import { CustomTab, CustomTabs } from "@/components/ui/CustomTabs"
 
 // Types
 export type SignatureStatus = "en_attente" | "signé" | "rejeté"
@@ -52,8 +54,8 @@ export type SignatureRequest = {
     participants: Participant[]
 }
 
-// Données d'exemple
-const data: SignatureRequest[] = [
+// Données d'exemple pour les demandes envoyées
+const sentData: SignatureRequest[] = [
     {
         id: "SR001",
         title: "Contrat de prestation de services",
@@ -124,6 +126,10 @@ const data: SignatureRequest[] = [
             },
         ],
     },
+]
+
+// Données d'exemple pour les demandes reçues
+const receivedData: SignatureRequest[] = [
     {
         id: "SR006",
         title: "Bon de commande",
@@ -287,7 +293,7 @@ export const columns: ColumnDef<SignatureRequest>[] = [
         accessorKey: "participants",
         header: "Participants",
         cell: ({ row }) => {
-            const participants = row.getValue("participants") as Participant[] || []
+            const participants = (row.getValue("participants") as Participant[]) || []
 
             return (
                 <div className="flex flex-col gap-1">
@@ -337,7 +343,7 @@ export const columns: ColumnDef<SignatureRequest>[] = [
             const document = row.original
             return (
                 <div className="flex items-center gap-2">
-                    <Link to='/signer-demande/1' >
+                    <Link to="/signer-demande/1">
                         <Eye className="h-4 w-4" />
                     </Link>
                     <Button variant="ghost" size="icon" title="Télécharger le document">
@@ -349,32 +355,15 @@ export const columns: ColumnDef<SignatureRequest>[] = [
     },
 ]
 
-export default function DemandeView() {
-    const [sorting, setSorting] = React.useState<SortingState>([])
-    const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
-    const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
-    const [rowSelection, setRowSelection] = React.useState({})
-    const [statusFilter, setStatusFilter] = React.useState<string>("all")
-    const [dateRange, setDateRange] = React.useState<Date | undefined>(undefined)
-    React.useRef(null)
-// Filtrer les données en fonction du statut sélectionné
-    React.useEffect(() => {
-        if (statusFilter === "all") {
-            table.getColumn("status")?.setFilterValue(undefined)
-        } else {
-            table.getColumn("status")?.setFilterValue([statusFilter])
-        }
-    }, [statusFilter])
-
-    // Filtrer les données en fonction de la date sélectionnée
-    React.useEffect(() => {
-        if (dateRange) {
-            const formattedDate = format(dateRange, "yyyy-MM-dd")
-            table.getColumn("dateCreated")?.setFilterValue(formattedDate)
-        } else {
-            table.getColumn("dateCreated")?.setFilterValue(undefined)
-        }
-    }, [dateRange])
+// Composant pour la table des demandes
+function DemandeTable({ data }: { data: SignatureRequest[] }) {
+    const [sorting, setSorting] = useState<SortingState>([])
+    const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
+    const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
+    const [rowSelection, setRowSelection] = useState({})
+    const [statusFilter, setStatusFilter] = useState<string>("all")
+    const [dateRange, setDateRange] = useState<Date | undefined>(undefined)
+    const tableRef = useRef(null)
 
     const table = useReactTable({
         data,
@@ -400,6 +389,25 @@ export default function DemandeView() {
         },
     })
 
+    // Filtrer les données en fonction du statut sélectionné
+    useEffect(() => {
+        if (statusFilter === "all") {
+            table.getColumn("status")?.setFilterValue(undefined)
+        } else {
+            table.getColumn("status")?.setFilterValue(statusFilter)
+        }
+    }, [statusFilter, table])
+
+    // Filtrer les données en fonction de la date sélectionnée
+    useEffect(() => {
+        if (dateRange) {
+            const formattedDate = format(dateRange, "yyyy-MM-dd")
+            table.getColumn("dateCreated")?.setFilterValue(formattedDate)
+        } else {
+            table.getColumn("dateCreated")?.setFilterValue(undefined)
+        }
+    }, [dateRange, table])
+
     // Fonction pour télécharger les documents sélectionnés
     const downloadSelected = () => {
         const selectedRows = table.getFilteredSelectedRowModel().rows
@@ -411,13 +419,15 @@ export default function DemandeView() {
     }
 
     return (
-        <div className="space-y-4 bg-white p-4 rounded-2xl border-1 border-gray-200">
+        <div className="space-y-4">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex flex-1 items-center gap-2">
                     <Input
                         placeholder="Rechercher..."
                         value={(table.getColumn("title")?.getFilterValue() as string) ?? ""}
-                        onChange={(event: React.ChangeEvent<HTMLInputElement>) => table.getColumn("title")?.setFilterValue(event.target.value)}
+                        onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                            table.getColumn("title")?.setFilterValue(event.target.value)
+                        }
                         className="max-w-sm"
                     />
 
@@ -560,6 +570,26 @@ export default function DemandeView() {
                     </Button>
                 </div>
             </div>
+        </div>
+    )
+}
+
+export default function DemandeViewWithCustomTabs() {
+    const [activeTab, setActiveTab] = useState("received")
+
+    return (
+        <div className="space-y-4 bg-white p-4 rounded-2xl border-1 border-gray-200">
+            <CustomTabs className="mb-4">
+                <CustomTab value="received" isActive={activeTab === "received"} onClick={setActiveTab}>
+                    Demandes reçues ({receivedData.length})
+                </CustomTab>
+                <CustomTab value="sent" isActive={activeTab === "sent"} onClick={setActiveTab}>
+                    Demandes envoyées ({sentData.length})
+                </CustomTab>
+            </CustomTabs>
+
+            {activeTab === "received" && <DemandeTable data={receivedData} />}
+            {activeTab === "sent" && <DemandeTable data={sentData} />}
         </div>
     )
 }

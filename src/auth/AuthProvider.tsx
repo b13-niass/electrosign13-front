@@ -15,6 +15,7 @@ import type {
 } from '@/@types/auth'
 import type { ReactNode, Ref } from 'react'
 import type { NavigateFunction } from 'react-router-dom'
+import Cookies from 'js-cookie'
 
 type AuthProviderProps = { children: ReactNode }
 
@@ -79,6 +80,7 @@ function AuthProvider({ children }: AuthProviderProps) {
             console.log(resp)
             if (resp) {
                 handleSignIn({ accessToken: resp.data.access_token }, resp.data.user)
+                Cookies.set("refresh_token", resp.data.refresh_token, { secure: true, sameSite: "Strict" });
                 redirect()
                 return {
                     status: 'OK',

@@ -16,11 +16,19 @@ export type SignInCredential = {
 
 export type SignInResponse = {
     access_token: string
-    refresh_token?: string
+    refresh_token: string
     expires_in?:string
     refresh_expires_in?: string
     token_type?: string
     user: UserType
+}
+
+export type RefreshTokenResponse = {
+    access_token: string
+    refresh_token: string
+    expires_in?:string
+    refresh_expires_in?: string
+    token_type?: string
 }
 
 export type SignUpResponse = SignInResponse

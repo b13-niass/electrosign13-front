@@ -5,7 +5,7 @@ export interface ApiResponseFormat<T>{
 }
 
 export type User = {
-    id?: string
+    readonly id?: string
     nom?: string
     prenom?: string
     email?: string
@@ -14,17 +14,18 @@ export type User = {
     publicKey?: string
     mySignature?: string
     fonction?: string
+    fonctionObject?: Fonction
     rolesLibelle?: string[]
     roles?: Role []
 }
 
 export type Role = {
-    id?: string
+    readonly id?: string
     libelle?: string
 }
 
 export type Fonction = {
-    id: string
+    readonly id: string
     libelle: string
     acronyme: string
 }

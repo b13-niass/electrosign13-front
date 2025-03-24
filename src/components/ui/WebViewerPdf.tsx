@@ -82,7 +82,7 @@ export default function WebViewerPdf({ file, restrictedMode = false }: WebViewer
     }
 
     return (
-        <div className="rounded-2xl w-full h-[617px] overflow-hidden bg-white relative">
+        <div className="rounded-2xl w-full max-h-[1030px] overflow-hidden bg-white relative">
             {isLoading && (
                 <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-80 z-10">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>

@@ -5,13 +5,14 @@ import {
     TOKEN_NAME_IN_STORAGE,
 } from '@/constants/api.constant'
 import type { InternalAxiosRequestConfig } from 'axios'
+import cookiesStorage from '@/utils/cookiesStorage'
 
-const AxiosRequestIntrceptorConfigCallback = (
+const AxiosRequestIntrceptorConfigCallback = async (
     config: InternalAxiosRequestConfig,
 ) => {
     const storage = appConfig.accessTokenPersistStrategy
 
-    if (storage === 'localStorage' || storage === 'sessionStorage') {
+    if (storage === 'localStorage' || storage === 'sessionStorage' || storage === 'cookies') {
         let accessToken = ''
 
         if (storage === 'localStorage') {
@@ -22,6 +23,9 @@ const AxiosRequestIntrceptorConfigCallback = (
             accessToken = sessionStorage.getItem(TOKEN_NAME_IN_STORAGE) || ''
         }
 
+        if (storage === 'cookies'){
+            accessToken = await cookiesStorage.getItem(TOKEN_NAME_IN_STORAGE) || ''
+        }
         if (accessToken) {
             config.headers[REQUEST_HEADER_AUTH_KEY] =
                 `${TOKEN_TYPE}${accessToken}`

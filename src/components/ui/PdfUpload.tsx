@@ -1,17 +1,23 @@
-"use client"
-
-import type React from "react"
+import React, { forwardRef, useEffect, useImperativeHandle } from 'react'
 
 import { useState, useRef } from "react"
 import { Upload, File, X, CheckCircle, AlertCircle } from "lucide-react"
 import { Button } from "@/components/shadcn-ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/shadcn-ui/card"
+import { Card, CardContent, CardFooter } from "@/components/shadcn-ui/card"
 import { Progress } from "@/components/shadcn-ui/progress"
-import { toast } from "sonner";
+import { toast } from "sonner"
 
 type UploadStatus = "idle" | "uploading" | "success" | "error"
 type UploadFileProps = (file: File) => void
-export function PdfUpload({onUploadFile}:{onUploadFile:UploadFileProps}) {
+
+type PdfUploadProps = {
+    onUploadFile: (file: File) => void
+}
+
+export type PdfUploadRef = {
+    clearFile: () => void;
+};
+const PdfUpload = forwardRef<PdfUploadRef, PdfUploadProps>(({ onUploadFile }, ref) => {
     const [file, setFile] = useState<File | null>(null)
     const [status, setStatus] = useState<UploadStatus>("idle")
     const [progress, setProgress] = useState(0)
@@ -23,8 +29,8 @@ export function PdfUpload({onUploadFile}:{onUploadFile:UploadFileProps}) {
         if (!selectedFile) return
 
         if (selectedFile.type !== "application/pdf") {
-            toast( "Invalid file type",{
-                description: "Please select a PDF file"
+            toast("Format invalide", {
+                description: "Veuillez sélectionner un fichier PDF",
             })
             return
         }
@@ -48,8 +54,8 @@ export function PdfUpload({onUploadFile}:{onUploadFile:UploadFileProps}) {
         if (!droppedFile) return
 
         if (droppedFile.type !== "application/pdf") {
-            toast("Invalid file type",{
-                description: "Please drop a PDF file",
+            toast("Format invalide", {
+                description: "Veuillez déposer un fichier PDF",
             })
             return
         }
@@ -63,7 +69,7 @@ export function PdfUpload({onUploadFile}:{onUploadFile:UploadFileProps}) {
         if (!file) return
 
         setStatus("uploading")
-        // Simulate upload progress
+        // Simuler la progression du téléchargement
         const interval = setInterval(() => {
             setProgress((prev) => {
                 if (prev >= 100) {
@@ -75,35 +81,31 @@ export function PdfUpload({onUploadFile}:{onUploadFile:UploadFileProps}) {
         }, 100)
 
         try {
-            // Simulate API call
+            // Simuler un appel API
             await new Promise((resolve) => setTimeout(resolve, 2000))
-
-            // In a real application, you would upload the file to your server here
-            // const formData = new FormData()
-            // formData.append("file", file)
-            // const response = await fetch("/api/upload", {
-            //   method: "POST",
-            //   body: formData,
-            // })
 
             clearInterval(interval)
             setProgress(100)
             setStatus("success")
-            onUploadFile(file);
-            toast("Upload successful",{
-                description: `${file.name} has been uploaded successfully.`,
+            onUploadFile(file)
+            toast("Téléchargement réussi", {
+                description: `${file.name} a été téléchargé avec succès.`,
             })
         } catch (error) {
             clearInterval(interval)
             setStatus("error")
 
-            toast( "Upload failed",{
-                description: "There was an error uploading your file. Please try again.",
+            toast("Échec du téléchargement", {
+                description: "Une erreur s'est produite lors du téléchargement de votre fichier. Veuillez réessayer.",
             })
         }
     }
 
+    useImperativeHandle(ref, () => ({
+        clearFile: handleClear,
+    }));
     const handleClear = () => {
+        console.log("ICI clear")
         setFile(null)
         setStatus("idle")
         setProgress(0)
@@ -113,13 +115,16 @@ export function PdfUpload({onUploadFile}:{onUploadFile:UploadFileProps}) {
     }
 
     return (
-        <Card className="w-full border-0 h-[190px] px-0 py-0 shadow-none">
-            {/*<CardHeader>*/}
-            {/*    <CardTitle>Upload PDF Document</CardTitle>*/}
-            {/*    <CardDescription>Select or drag and drop a PDF file to upload</CardDescription>*/}
-            {/*</CardHeader>*/}
+        <Card className="w-full border-0 !h-[168px] px-0 py-0 shadow-none">
             <CardContent className="px-0">
-                <input type="file" id="file" accept="application/pdf" onChange={handleFileChange} className="hidden" ref={fileInputRef} />
+                <input
+                    type="file"
+                    id="file"
+                    accept="application/pdf"
+                    onChange={handleFileChange}
+                    className="hidden"
+                    ref={fileInputRef}
+                />
 
                 {!file ? (
                     <div
@@ -150,21 +155,21 @@ export function PdfUpload({onUploadFile}:{onUploadFile:UploadFileProps}) {
                         {status === "uploading" && (
                             <div className="space-y-2">
                                 <Progress value={progress} className="h-2" />
-                                <p className="text-xs text-center text-gray-500 dark:text-gray-400">Uploading... {progress}%</p>
+                                <p className="text-xs text-center text-gray-500 dark:text-gray-400">Téléchargement... {progress}%</p>
                             </div>
                         )}
 
                         {status === "success" && (
                             <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-500">
                                 <CheckCircle className="h-4 w-4" />
-                                <span>Upload complete</span>
+                                <span>Téléchargement terminé</span>
                             </div>
                         )}
 
                         {status === "error" && (
                             <div className="flex items-center gap-2 text-sm text-red-600 dark:text-red-500">
                                 <AlertCircle className="h-4 w-4" />
-                                <span>Upload failed. Please try again.</span>
+                                <span>Échec du téléchargement. Veuillez réessayer.</span>
                             </div>
                         )}
                     </div>
@@ -182,5 +187,6 @@ export function PdfUpload({onUploadFile}:{onUploadFile:UploadFileProps}) {
             </CardFooter>
         </Card>
     )
-}
+})
 
+export default PdfUpload

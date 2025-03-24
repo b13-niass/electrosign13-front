@@ -9,14 +9,20 @@ type Session = {
     signedIn: boolean
 }
 
+type TokenValidity = {
+    isValid: boolean
+}
+
 type AuthState = {
     session: Session
     user: UserType
+    tokenValidity: TokenValidity
 }
 
 type AuthAction = {
     setSessionSignedIn: (payload: boolean) => void
     setUser: (payload: UserType) => void
+    setTokenValidity: (payload: boolean) => void
 }
 
 const getPersistStorage = () => {
@@ -34,6 +40,9 @@ const getPersistStorage = () => {
 const initialState: AuthState = {
     session: {
         signedIn: false,
+    },
+    tokenValidity: {
+        isValid: true
     },
     user: {
         id: '',
@@ -68,6 +77,12 @@ export const useSessionUser = create<AuthState & AuthAction>()(
                         ...payload,
                     },
                 })),
+            setTokenValidity: (payload) => set((state) => ({
+                tokenValidity: {
+                    ...state.tokenValidity,
+                    isValid: payload,
+                }
+            }))
         }),
         { name: 'sessionUser', storage: createJSONStorage(() => localStorage) },
     ),
