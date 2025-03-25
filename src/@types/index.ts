@@ -28,4 +28,39 @@ export type Fonction = {
     readonly id: string
     libelle: string
     acronyme: string
+    createdAt?: string
+    updatedAt?: string
+}
+
+export type AddUser = {
+    id: string
+    prenom: string
+    nom: string
+    email: string
+    password: string
+    telephone?: string
+    photo?: string
+    cni?: string
+    fonctionId: number
+    fonctionNom?: string
+    roles: string[]
+    active: boolean
+}
+
+export type Departement = {
+    id: string
+    libelle: string
+    acronyme: string
+    fonctions: Fonction[]
+    createdAt: string
+    updatedAt: string
+}
+
+export type Filiale = {
+    id: string
+    libelle: string
+    acronyme: string
+    departements: Departement[]
+    createdAt: string
+    updatedAt: string
 }

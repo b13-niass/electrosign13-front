@@ -1,4 +1,8 @@
+import UserManagement from '@/components/users/user-management'
+
 const UtilisateurView = () => {
-    return <></>
+    return (
+        <UserManagement />
+    )
 }
 export default UtilisateurView

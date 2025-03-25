@@ -12,7 +12,7 @@ export function CustomTab({ children, value, isActive, onClick }: TabProps) {
     return (
         <button
             className={cn(
-                "flex-1 py-3 text-lg px-4 text-center font-medium transition-colors",
+                "flex-1 py-3 text-[16px] px-4 text-center font-medium transition-colors",
                 isActive ? "bg-black font-bold text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200",
             )}
             onClick={() => onClick(value)}
