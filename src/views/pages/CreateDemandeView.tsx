@@ -1,13 +1,13 @@
 "use client"
 
-import { useEffect, useState, useMemo, useRef } from 'react'
+import { useEffect, useState, useMemo, useRef } from "react"
 import { Controller, useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Form } from "@/components/ui/Form"
 import type { CommonProps } from "@/@types/common"
 import useTimeOutMessage from "@/utils/hooks/useTimeOutMessage"
-import DemandeService, { type DemandeCredentials, type UserDemande } from "@/services/DemandeService"
-import PdfUpload, { PdfUploadRef } from '@/components/ui/PdfUpload'
+import DemandeService, { type DemandeCredentials } from "@/services/DemandeService"
+import PdfUpload, { type PdfUploadRef } from "@/components/ui/PdfUpload"
 import { MultiSelect } from "@/components/ui/MultiSelect"
 import { Label } from "@/components/shadcn-ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/shadcn-ui/radio-group"
@@ -46,6 +46,13 @@ interface CreateDemandeFormProps extends CommonProps {
     setMessage?: (message: string) => void
 }
 
+// Update the UserDemande type to include the order property
+export type UserDemande = {
+    id?: string
+    action?: string
+    ordre?: string
+}
+
 const CreateDemandeView = () => {
     const [fileUpload, setFileUpload] = useState<File | undefined>(undefined)
     const [attachments, setAttachments] = useState<File[]>([])
@@ -56,9 +63,9 @@ const CreateDemandeView = () => {
     const [selectedSignataire, setSelectedSignataire] = useState<string[]>([])
     const [selectedApprobateur, setSelectedApprobateur] = useState<string[]>([])
     const [selectedAmpliateurs, setSelectedAmpliateurs] = useState<string[]>([])
-    const { user , tokenValidity, setTokenValidity} = useSessionUser()
+    const { user, tokenValidity, setTokenValidity } = useSessionUser()
     const today = startOfToday()
-    const pdfUploadRef = useRef<PdfUploadRef>(null);
+    const pdfUploadRef = useRef<PdfUploadRef>(null)
 
     const {
         handleSubmit,
@@ -123,7 +130,7 @@ const CreateDemandeView = () => {
                 // Fusionner les listes et éliminer les doublons par valeur (id)
                 const allUsersMap = new Map()
                 ;[...signatairesOptions, ...approbateursOptions, ...ampliateurOptions].forEach((option) => {
-                    if (option.value!= user.id) {
+                    if (option.value != user.id) {
                         allUsersMap.set(option.value, option)
                     }
                 })
@@ -202,7 +209,7 @@ const CreateDemandeView = () => {
                 setSelectedAmpliateurs([])
                 if (pdfUploadRef.current) {
                     console.log("ICI clear")
-                    pdfUploadRef.current.clearFile();
+                    pdfUploadRef.current.clearFile()
                 }
             } else {
                 toast("Erreur lors de la création de la demande", {
@@ -237,8 +244,14 @@ const CreateDemandeView = () => {
         })
     }
 
+    // Update the onChangeSignataires function to include order
     const onChangeSignataires = (values: string[]) => {
-        const result: UserDemande[] = values.map((v) => ({ id: v! + "", action: "SIGNER" }))
+        const result: UserDemande[] = values.map((v, index) => ({
+            id: v! + "",
+            action: "SIGNER",
+            ordre: (index + 1).toString(),
+        }))
+        console.log(result)
         setValue("signataires", result, {
             shouldValidate: true,
             shouldDirty: true,
@@ -247,8 +260,13 @@ const CreateDemandeView = () => {
         setSelectedSignataire(values)
     }
 
+    // Update the onChangeApprobateur function to include order
     const onChangeApprobateur = (values: string[]) => {
-        const result: UserDemande[] = values.map((v) => ({ id: v + "", action: "APPROUVER" }))
+        const result: UserDemande[] = values.map((v, index) => ({
+            id: v + "",
+            action: "APPROUVER",
+            ordre: (index + 1).toString(),
+        }))
         setValue("approbateurs", result, {
             shouldValidate: false,
             shouldDirty: false,
@@ -257,8 +275,13 @@ const CreateDemandeView = () => {
         setSelectedApprobateur(values)
     }
 
+    // Update the onChangeAmpliateurs function to include order
     const onChangeAmpliateurs = (values: string[]) => {
-        const result: UserDemande[] = values.map((v) => ({ id: v + "", action: "AMPLIER" }))
+        const result: UserDemande[] = values.map((v, index) => ({
+            id: v + "",
+            action: "AMPLIER",
+            ordre: (index + 1).toString(),
+        }))
         setValue("ampliateurs", result, {
             shouldValidate: false,
             shouldDirty: false,

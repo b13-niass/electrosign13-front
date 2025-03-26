@@ -1,5 +1,5 @@
 import ApiService from '@/services/ApiService'
-import { ApiResponseFormat } from '@/@types'
+import { ApiResponseFormat, SignatureRequest } from '@/@types'
 import endpointConfig from '@/configs/endpoint.config'
 import { format } from 'date-fns'
 
@@ -22,6 +22,7 @@ export type DemandeResponse = {
 export type UserDemande = {
     id: string
     action: string
+    ordre: string
 }
 
 class DemandeServices {
@@ -41,16 +42,20 @@ class DemandeServices {
         data.signataires.forEach((signataire, index) => {
             formData.append(`signataires[${index}].id`, signataire.id);
             formData.append(`signataires[${index}].action`, signataire.action);
+            formData.append(`signataires[${index}].ordre`, signataire.ordre);
         });
 
         data.approbateurs.forEach((approbateur, index) => {
             formData.append(`approbateurs[${index}].id`, approbateur.id);
             formData.append(`approbateurs[${index}].action`, approbateur.action);
+            formData.append(`approbateurs[${index}].ordre`, approbateur.ordre);
+
         });
 
         data.ampliateurs.forEach((ampliateur, index) => {
             formData.append(`ampliateurs[${index}].id`, ampliateur.id);
             formData.append(`ampliateurs[${index}].action`, ampliateur.action);
+            formData.append(`ampliateurs[${index}].ordre`, ampliateur.ordre);
         });
 
         console.log("FormData entries:");
@@ -64,6 +69,24 @@ class DemandeServices {
         });
     }
 
+    async getDemandesEnvoyees(){
+        return ApiService.fetchDataWithAxios<ApiResponseFormat<SignatureRequest[]>>({
+            url: endpointConfig.getDemandesEnvoyees,
+            method: 'get',
+        });
+    }
+    async getDemandesRecues(){
+        return ApiService.fetchDataWithAxios<ApiResponseFormat<SignatureRequest[]>>({
+            url: endpointConfig.getDemandesRecues,
+            method: 'get',
+        });
+    }
+    async getDashboardData(){
+        return ApiService.fetchDataWithAxios<ApiResponseFormat<undefined>>({
+            url: endpointConfig.getDashboardData,
+            method: 'get',
+        });
+    }
 }
 
 const demandeServices = new DemandeServices();

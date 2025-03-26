@@ -13,7 +13,7 @@ import {
 } from "@tanstack/react-table"
 import { format } from "date-fns"
 import { fr } from "date-fns/locale"
-import { CalendarIcon, Check, Download, Eye, FileText, Filter, X } from "lucide-react"
+import { CalendarIcon, Check, Download, Eye, FileText, Filter, X, Clock } from "lucide-react"
 
 import { Button } from "@/components/shadcn-ui/button"
 import { Calendar } from "@/components/shadcn-ui/calendar"
@@ -33,187 +33,26 @@ import { cn } from "@/lib/utils"
 import { Link } from "react-router-dom"
 import { type ChangeEvent, useEffect, useRef, useState } from "react"
 import { CustomTab, CustomTabs } from "@/components/ui/CustomTabs"
-
-// Types
-export type SignatureStatus = "en_attente" | "signé" | "rejeté"
-
-export type Participant = {
-    id: string
-    name: string
-    email: string
-    role: "signataire" | "approbateur"
-    hasSigned: boolean
-}
-
-export type SignatureRequest = {
-    id: string
-    title: string
-    dateCreated: Date
-    status: SignatureStatus
-    documentUrl: string
-    participants: Participant[]
-}
-
-// Données d'exemple pour les demandes envoyées
-const sentData: SignatureRequest[] = [
-    {
-        id: "SR001",
-        title: "Contrat de prestation de services",
-        dateCreated: new Date(2025, 2, 15),
-        status: "en_attente",
-        documentUrl: "/documents/contrat-services.pdf",
-        participants: [
-            { id: "P1", name: "Marie Dupont", email: "marie.dupont@example.com", role: "signataire", hasSigned: true },
-            { id: "P2", name: "Jean Martin", email: "jean.martin@example.com", role: "signataire", hasSigned: false },
-            { id: "P3", name: "Sophie Leclerc", email: "sophie.leclerc@example.com", role: "approbateur", hasSigned: true },
-        ],
-    },
-    {
-        id: "SR002",
-        title: "Accord de confidentialité",
-        dateCreated: new Date(2025, 2, 10),
-        status: "signé",
-        documentUrl: "/documents/nda.pdf",
-        participants: [
-            { id: "P4", name: "Thomas Bernard", email: "thomas.bernard@example.com", role: "signataire", hasSigned: true },
-            { id: "P5", name: "Camille Petit", email: "camille.petit@example.com", role: "signataire", hasSigned: true },
-            { id: "P6", name: "Lucas Moreau", email: "lucas.moreau@example.com", role: "approbateur", hasSigned: true },
-        ],
-    },
-    {
-        id: "SR003",
-        title: "Contrat d'embauche",
-        dateCreated: new Date(2025, 2, 5),
-        status: "rejeté",
-        documentUrl: "/documents/contrat-embauche.pdf",
-        participants: [
-            { id: "P7", name: "Emma Dubois", email: "emma.dubois@example.com", role: "signataire", hasSigned: false },
-            { id: "P8", name: "Léo Richard", email: "leo.richard@example.com", role: "approbateur", hasSigned: false },
-        ],
-    },
-    {
-        id: "SR004",
-        title: "Avenant au contrat",
-        dateCreated: new Date(2025, 2, 1),
-        status: "en_attente",
-        documentUrl: "/documents/avenant.pdf",
-        participants: [
-            { id: "P9", name: "Julie Lambert", email: "julie.lambert@example.com", role: "signataire", hasSigned: true },
-            {
-                id: "P10",
-                name: "Nicolas Fournier",
-                email: "nicolas.fournier@example.com",
-                role: "signataire",
-                hasSigned: false,
-            },
-        ],
-    },
-    {
-        id: "SR005",
-        title: "Procès-verbal de réunion",
-        dateCreated: new Date(2025, 1, 25),
-        status: "signé",
-        documentUrl: "/documents/pv-reunion.pdf",
-        participants: [
-            { id: "P11", name: "Aurélie Morel", email: "aurelie.morel@example.com", role: "signataire", hasSigned: true },
-            { id: "P12", name: "Pierre Leroy", email: "pierre.leroy@example.com", role: "signataire", hasSigned: true },
-            {
-                id: "P13",
-                name: "Isabelle Girard",
-                email: "isabelle.girard@example.com",
-                role: "approbateur",
-                hasSigned: true,
-            },
-        ],
-    },
-]
-
-// Données d'exemple pour les demandes reçues
-const receivedData: SignatureRequest[] = [
-    {
-        id: "SR006",
-        title: "Bon de commande",
-        dateCreated: new Date(2025, 1, 20),
-        status: "en_attente",
-        documentUrl: "/documents/bon-commande.pdf",
-        participants: [
-            { id: "P14", name: "David Mercier", email: "david.mercier@example.com", role: "signataire", hasSigned: false },
-            { id: "P15", name: "Céline Roux", email: "celine.roux@example.com", role: "approbateur", hasSigned: true },
-        ],
-    },
-    {
-        id: "SR007",
-        title: "Contrat de bail",
-        dateCreated: new Date(2025, 1, 15),
-        status: "signé",
-        documentUrl: "/documents/contrat-bail.pdf",
-        participants: [
-            { id: "P16", name: "Mathieu Vincent", email: "mathieu.vincent@example.com", role: "signataire", hasSigned: true },
-            { id: "P17", name: "Laura Simon", email: "laura.simon@example.com", role: "signataire", hasSigned: true },
-        ],
-    },
-    {
-        id: "SR008",
-        title: "Attestation de travail",
-        dateCreated: new Date(2025, 1, 10),
-        status: "en_attente",
-        documentUrl: "/documents/attestation.pdf",
-        participants: [
-            { id: "P18", name: "Antoine Durand", email: "antoine.durand@example.com", role: "signataire", hasSigned: false },
-            {
-                id: "P19",
-                name: "Nathalie Michel",
-                email: "nathalie.michel@example.com",
-                role: "approbateur",
-                hasSigned: false,
-            },
-        ],
-    },
-    {
-        id: "SR009",
-        title: "Contrat de partenariat",
-        dateCreated: new Date(2025, 1, 5),
-        status: "rejeté",
-        documentUrl: "/documents/partenariat.pdf",
-        participants: [
-            {
-                id: "P20",
-                name: "François Lefebvre",
-                email: "francois.lefebvre@example.com",
-                role: "signataire",
-                hasSigned: false,
-            },
-            {
-                id: "P21",
-                name: "Sandrine Bertrand",
-                email: "sandrine.bertrand@example.com",
-                role: "signataire",
-                hasSigned: false,
-            },
-        ],
-    },
-    {
-        id: "SR010",
-        title: "Accord de licence",
-        dateCreated: new Date(2025, 1, 1),
-        status: "signé",
-        documentUrl: "/documents/licence.pdf",
-        participants: [
-            { id: "P22", name: "Julien Rousseau", email: "julien.rousseau@example.com", role: "signataire", hasSigned: true },
-            { id: "P23", name: "Caroline Blanc", email: "caroline.blanc@example.com", role: "approbateur", hasSigned: true },
-        ],
-    },
-]
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/shadcn-ui/tooltip"
+import { toast } from "sonner"
+import type { SignatureRequest, SignatureStatus } from "@/@types"
+import DemandeService from "@/services/DemandeService"
 
 // Fonction pour obtenir le statut traduit
 function getStatusLabel(status: SignatureStatus): string {
     switch (status) {
-        case "en_attente":
-            return "En attente"
-        case "signé":
-            return "Signé"
-        case "rejeté":
-            return "Rejeté"
+        case "EN_ATTENTE_APPROBATION":
+            return "En attente d'approbation"
+        case "APPROUVEE":
+            return "Approuvée"
+        case "EN_ATTENTE_SIGNATURE":
+            return "En attente de signature"
+        case "SIGNEE":
+            return "Signée"
+        case "REFUSEE":
+            return "Refusée"
+        case "ANNULEE":
+            return "Annulée"
         default:
             return status
     }
@@ -222,11 +61,31 @@ function getStatusLabel(status: SignatureStatus): string {
 // Fonction pour obtenir la couleur du badge selon le statut
 function getStatusColor(status: SignatureStatus): string {
     switch (status) {
-        case "en_attente":
+        case "EN_ATTENTE_APPROBATION":
+            return "bg-blue-100 text-blue-800 hover:bg-blue-100"
+        case "APPROUVEE":
+            return "bg-teal-100 text-teal-800 hover:bg-teal-100"
+        case "EN_ATTENTE_SIGNATURE":
             return "bg-yellow-100 text-yellow-800 hover:bg-yellow-100"
-        case "signé":
+        case "SIGNEE":
             return "bg-green-100 text-green-800 hover:bg-green-100"
-        case "rejeté":
+        case "REFUSEE":
+            return "bg-red-100 text-red-800 hover:bg-red-100"
+        case "ANNULEE":
+            return "bg-gray-100 text-gray-800 hover:bg-gray-100"
+        default:
+            return ""
+    }
+}
+
+// Fonction pour obtenir la couleur du badge selon la priorité
+function getPriorityColor(priority: string): string {
+    switch (priority) {
+        case "FAIBLE":
+            return "bg-blue-100 text-blue-800 hover:bg-blue-100"
+        case "MOYENNE":
+            return "bg-orange-100 text-orange-800 hover:bg-orange-100"
+        case "HAUTE":
             return "bg-red-100 text-red-800 hover:bg-red-100"
         default:
             return ""
@@ -255,12 +114,12 @@ export const columns: ColumnDef<SignatureRequest>[] = [
         enableHiding: false,
     },
     {
-        accessorKey: "title",
+        accessorKey: "titre",
         header: "Document",
         cell: ({ row }) => (
             <div className="flex items-center gap-2">
                 <FileText className="h-4 w-4 text-muted-foreground" />
-                <span>{row.getValue("title")}</span>
+                <span>{row.getValue("titre")}</span>
             </div>
         ),
     },
@@ -270,7 +129,28 @@ export const columns: ColumnDef<SignatureRequest>[] = [
         cell: ({ row }) => {
             const date = row.getValue("dateCreated") as Date
             if (!date) return "Date invalide" // Fallback for invalid dates
-            return format(date, "dd MMMM yyyy", { locale: fr }) || "Date invalide"
+            return format(new Date(date), "dd MMMM yyyy", { locale: fr }) || "Date invalide"
+        },
+    },
+    {
+        accessorKey: "dateLimite",
+        header: "Date limite",
+        cell: ({ row }) => {
+            const date = row.getValue("dateLimite") as Date
+            if (!date) return "Non définie" // Fallback for invalid dates
+            return format(new Date(date), "dd MMMM yyyy", { locale: fr }) || "Date invalide"
+        },
+    },
+    {
+        accessorKey: "priority",
+        header: "Priorité",
+        cell: ({ row }) => {
+            const priority = row.getValue("priority") as string
+            return (
+                <Badge variant="outline" className={getPriorityColor(priority)}>
+                    {priority}
+                </Badge>
+            )
         },
     },
     {
@@ -290,45 +170,129 @@ export const columns: ColumnDef<SignatureRequest>[] = [
         },
     },
     {
-        accessorKey: "participants",
+        accessorKey: "signataires",
         header: "Participants",
         cell: ({ row }) => {
-            const participants = (row.getValue("participants") as Participant[]) || []
+            const signataires = row.original.signataires || []
+            const approbateurs = row.original.approbateurs || []
+            const ampliateurs = row.original.ampliateurs || []
 
             return (
                 <div className="flex flex-col gap-1">
-                    <div className="text-xs font-medium">Signataires:</div>
-                    <div className="flex flex-wrap gap-1">
-                        {participants
-                            .filter((p) => p.role === "signataire")
-                            .map((participant) => (
-                                <Badge
-                                    key={participant.id}
-                                    variant="outline"
-                                    className={cn("text-xs", participant.hasSigned ? "bg-green-100 text-green-800" : "bg-gray-100")}
-                                >
-                                    {participant.name}
-                                    {participant.hasSigned && <Check className="ml-1 h-3 w-3" />}
-                                </Badge>
-                            ))}
-                    </div>
+                    {signataires.length > 0 && (
+                        <>
+                            <div className="text-xs font-medium">Signataires:</div>
+                            <div className="flex flex-wrap gap-1">
+                                {signataires.map((participant) => (
+                                    <TooltipProvider key={participant.id}>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <Badge
+                                                    variant="outline"
+                                                    className={cn(
+                                                        "text-xs flex items-center gap-1",
+                                                        participant.hasSigned
+                                                            ? "bg-green-100 text-green-800"
+                                                            : participant.currentSigner
+                                                                ? "!bg-yellow-100 !text-yellow-800 !border-yellow-400 !border-2"
+                                                                : `bg-gray-100 ${participant.currentSigner}`,
+                                                    )}
+                                                >
+                                                    <span className="font-bold mr-1">{participant.ordre}.</span>
+                                                    {participant.name}
+                                                    {participant.hasSigned && <Check className="h-3 w-3" />}
+                                                    {participant.currentSigner && <Clock className="h-3 w-3" />}
+                                                </Badge>
+                                            </TooltipTrigger>
+                                            <TooltipContent>
+                                                <p>{participant.email}</p>
+                                                <p>Ordre: {participant.ordre}</p>
+                                                <p>
+                                                    {participant.hasSigned
+                                                        ? "Signé"
+                                                        : participant.currentSigner
+                                                            ? "En attente de signature (actuel)"
+                                                            : "En attente de signature"}
+                                                </p>
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    </TooltipProvider>
+                                ))}
+                            </div>
+                        </>
+                    )}
 
-                    {participants.some((p) => p.role === "approbateur") && (
+                    {approbateurs.length > 0 && (
                         <>
                             <div className="text-xs font-medium mt-1">Approbateurs:</div>
                             <div className="flex flex-wrap gap-1">
-                                {participants
-                                    .filter((p) => p.role === "approbateur")
-                                    .map((participant) => (
-                                        <Badge
-                                            key={participant.id}
-                                            variant="outline"
-                                            className={cn("text-xs", participant.hasSigned ? "bg-green-100 text-green-800" : "bg-gray-100")}
-                                        >
-                                            {participant.name}
-                                            {participant.hasSigned && <Check className="ml-1 h-3 w-3" />}
-                                        </Badge>
-                                    ))}
+                                {approbateurs.map((participant) => (
+                                    <TooltipProvider key={participant.id}>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <Badge
+                                                    variant="outline"
+                                                    className={cn(
+                                                        "text-xs flex items-center gap-1",
+                                                        participant.hasSigned
+                                                            ? "bg-green-100 text-green-800"
+                                                            : participant.currentSigner
+                                                                ? "!bg-yellow-100 text-yellow-800 border-yellow-400 border-2"
+                                                                : "bg-gray-100",
+                                                    )}
+                                                >
+                                                    <span className="font-bold mr-1">{participant.ordre}.</span>
+                                                    {participant.name}
+                                                    {participant.hasSigned && <Check className="h-3 w-3" />}
+                                                    {participant.currentSigner && <Clock className="h-3 w-3" />}
+                                                </Badge>
+                                            </TooltipTrigger>
+                                            <TooltipContent>
+                                                <p>{participant.email}</p>
+                                                <p>Ordre: {participant.ordre}</p>
+                                                <p>
+                                                    {participant.hasSigned
+                                                        ? "Approuvé"
+                                                        : participant.currentSigner
+                                                            ? "En attente d'approbation (actuel)"
+                                                            : "En attente d'approbation"}
+                                                </p>
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    </TooltipProvider>
+                                ))}
+                            </div>
+                        </>
+                    )}
+
+                    {ampliateurs.length > 0 && (
+                        <>
+                            <div className="text-xs font-medium mt-1">Ampliateurs:</div>
+                            <div className="flex flex-wrap gap-1">
+                                {ampliateurs.map((participant) => (
+                                    <TooltipProvider key={participant.id}>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <Badge
+                                                    variant="outline"
+                                                    className={cn(
+                                                        "text-xs",
+                                                        participant.hasSigned ? "bg-green-100 text-green-800" : "bg-gray-100",
+                                                    )}
+                                                >
+                                                    <span className="font-bold mr-1">{participant.ordre}.</span>
+                                                    {participant.name}
+                                                    {participant.hasSigned && <Check className="h-3 w-3" />}
+                                                </Badge>
+                                            </TooltipTrigger>
+                                            <TooltipContent>
+                                                <p>{participant.email}</p>
+                                                <p>Ordre: {participant.ordre}</p>
+                                                <p>{participant.hasSigned ? "Amplifié" : "En attente d'ampliation"}</p>
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    </TooltipProvider>
+                                ))}
                             </div>
                         </>
                     )}
@@ -341,10 +305,29 @@ export const columns: ColumnDef<SignatureRequest>[] = [
         header: "Actions",
         cell: ({ row }) => {
             const document = row.original
+            const canSign = document.isCurrentUserSigner && document.status === "EN_ATTENTE_SIGNATURE"
+            const canApprove = document.isCurrentUserApprobateur && document.status === "EN_ATTENTE_APPROBATION"
+
             return (
                 <div className="flex items-center gap-2">
-                    <Link to="/signer-demande/1">
-                        <Eye className="h-4 w-4" />
+                    <Link to={`/signer-demande/${document.id}`}>
+                        <Button
+                            variant={canSign || canApprove ? "default" : "ghost"}
+                            size="sm"
+                            className={cn(
+                                canSign ? "bg-blue-500 hover:bg-blue-600" : "",
+                                canApprove ? "bg-teal-500 hover:bg-teal-600" : "",
+                            )}
+                            title={
+                                canSign
+                                    ? "Votre signature est requise"
+                                    : canApprove
+                                        ? "Votre approbation est requise"
+                                        : "Voir le document"
+                            }
+                        >
+                            {canSign ? "Signer" : canApprove ? "Approuver" : <Eye className="h-4 w-4" />}
+                        </Button>
                     </Link>
                     <Button variant="ghost" size="icon" title="Télécharger le document">
                         <Download className="h-4 w-4" />
@@ -363,7 +346,7 @@ function DemandeTable({ data }: { data: SignatureRequest[] }) {
     const [rowSelection, setRowSelection] = useState({})
     const [statusFilter, setStatusFilter] = useState<string>("all")
     const [dateRange, setDateRange] = useState<Date | undefined>(undefined)
-    const tableRef = useRef(null)
+    // const tableRef = useRef(null)
 
     const table = useReactTable({
         data,
@@ -413,7 +396,7 @@ function DemandeTable({ data }: { data: SignatureRequest[] }) {
         const selectedRows = table.getFilteredSelectedRowModel().rows
         console.log(
             "Téléchargement des documents sélectionnés:",
-            selectedRows.map((row) => row.original.title),
+            selectedRows.map((row) => row.original.titre),
         )
         // Logique de téléchargement ici
     }
@@ -424,9 +407,9 @@ function DemandeTable({ data }: { data: SignatureRequest[] }) {
                 <div className="flex flex-1 items-center gap-2">
                     <Input
                         placeholder="Rechercher..."
-                        value={(table.getColumn("title")?.getFilterValue() as string) ?? ""}
+                        value={(table.getColumn("titre")?.getFilterValue() as string) ?? ""}
                         onChange={(event: ChangeEvent<HTMLInputElement>) =>
-                            table.getColumn("title")?.setFilterValue(event.target.value)
+                            table.getColumn("titre")?.setFilterValue(event.target.value)
                         }
                         className="max-w-sm"
                     />
@@ -437,9 +420,12 @@ function DemandeTable({ data }: { data: SignatureRequest[] }) {
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="all">Tous les statuts</SelectItem>
-                            <SelectItem value="en_attente">En attente</SelectItem>
-                            <SelectItem value="signé">Signé</SelectItem>
-                            <SelectItem value="rejeté">Rejeté</SelectItem>
+                            <SelectItem value="EN_ATTENTE_APPROBATION">En attente d&apos;approbation</SelectItem>
+                            <SelectItem value="APPROUVEE">Approuvée</SelectItem>
+                            <SelectItem value="EN_ATTENTE_SIGNATURE">En attente de signature</SelectItem>
+                            <SelectItem value="SIGNEE">Signée</SelectItem>
+                            <SelectItem value="REFUSEE">Refusée</SelectItem>
+                            <SelectItem value="ANNULEE">Annulée</SelectItem>
                         </SelectContent>
                     </Select>
 
@@ -490,15 +476,19 @@ function DemandeTable({ data }: { data: SignatureRequest[] }) {
                                             checked={column.getIsVisible()}
                                             onCheckedChange={(value: boolean) => column.toggleVisibility(!!value)}
                                         >
-                                            {column.id === "title"
+                                            {column.id === "titre"
                                                 ? "Document"
                                                 : column.id === "dateCreated"
                                                     ? "Date de création"
-                                                    : column.id === "status"
-                                                        ? "Statut"
-                                                        : column.id === "participants"
-                                                            ? "Participants"
-                                                            : column.id}
+                                                    : column.id === "dateLimite"
+                                                        ? "Date limite"
+                                                        : column.id === "status"
+                                                            ? "Statut"
+                                                            : column.id === "priority"
+                                                                ? "Priorité"
+                                                                : column.id === "signataires"
+                                                                    ? "Participants"
+                                                                    : column.id}
                                         </DropdownMenuCheckboxItem>
                                     )
                                 })}
@@ -574,8 +564,36 @@ function DemandeTable({ data }: { data: SignatureRequest[] }) {
     )
 }
 
-export default function DemandeViewWithCustomTabs() {
+export default function DemandeView() {
     const [activeTab, setActiveTab] = useState("received")
+    const [receivedData, setReceivedData] = useState<SignatureRequest[]>([])
+    const [sentData, setSentData] = useState<SignatureRequest[]>([])
+    const [loading, setLoading] = useState(true)
+
+    useEffect(() => {
+        const fetchData = async () => {
+            setLoading(true)
+            try {
+                const [receivedResponse, sentResponse] = await Promise.all([
+                    DemandeService.getDemandesRecues(),
+                    DemandeService.getDemandesEnvoyees(),
+                ])
+                if (receivedResponse.status !== "OK" || sentResponse.status !== "OK") {
+                    throw new Error("Erreur lors du chargement des données des demandes")
+                }
+                console.log(receivedResponse.data)
+                setReceivedData(receivedResponse.data)
+                setSentData(sentResponse.data)
+            } catch (error) {
+                console.error("Erreur lors du chargement des données:", error)
+                toast.error("Impossible de charger les données des demandes")
+            } finally {
+                setLoading(false)
+            }
+        }
+
+        fetchData()
+    }, [])
 
     return (
         <div className="space-y-4 bg-white p-4 rounded-2xl border-1 border-gray-200">
@@ -588,8 +606,16 @@ export default function DemandeViewWithCustomTabs() {
                 </CustomTab>
             </CustomTabs>
 
-            {activeTab === "received" && <DemandeTable data={receivedData} />}
-            {activeTab === "sent" && <DemandeTable data={sentData} />}
+            {loading ? (
+                <div className="flex justify-center items-center h-64">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+                </div>
+            ) : (
+                <>
+                    {activeTab === "received" && <DemandeTable data={receivedData} />}
+                    {activeTab === "sent" && <DemandeTable data={sentData} />}
+                </>
+            )}
         </div>
     )
 }

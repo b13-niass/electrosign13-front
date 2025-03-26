@@ -28,6 +28,7 @@ export default function WebViewerPdf({ file, restrictedMode = false }: WebViewer
                 const instance = await WebViewer(
                     {
                         path: "/webviewer/public",
+                        licenseKey: "demo:1742976837142:61288cf803000000000472f1cd0f0705d57cd6722e3aa3dc8ed87eef9c"
                     },
                     viewer.current!
                 )

@@ -64,3 +64,46 @@ export type Filiale = {
     createdAt: string
     updatedAt: string
 }
+
+export type SignatureStatus =
+    | "EN_ATTENTE_APPROBATION"
+    | "APPROUVEE"
+    | "EN_ATTENTE_SIGNATURE"
+    | "SIGNEE"
+    | "REFUSEE"
+    | "ANNULEE";
+
+export type Participant = {
+    id: number
+    name: string
+    email: string
+    role: string
+    hasSigned: boolean
+    currentSigner: boolean
+    ordre: number
+    action: string
+}
+
+export type SignatureRequest = {
+    id: number
+    titre: string
+    description: string
+    dateCreated: Date
+    dateLimite: Date
+    status: SignatureStatus
+    priority: string
+    documentUrl: string
+    signataires: Participant[]
+    approbateurs: Participant[]
+    ampliateurs: Participant[]
+    sender: {
+        id: number
+        nom: string
+        prenom: string
+        email: string
+        fonction: string
+        acronyme: string
+    }
+    isCurrentUserSigner: boolean
+    isCurrentUserApprobateur: boolean
+}

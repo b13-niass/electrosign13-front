@@ -7,18 +7,21 @@ const createDemandeSchema: ZodType<CreateDemandeFormSchema> = z.object({
         z.object({
             id: z.string().optional(),
             action: z.string().optional(),
+            ordre: z.string().optional()
         })
     ).min(1, "Au moins un signataire est requis"),
     approbateurs: z.array(
         z.object({
             id: z.string().optional(),
             action: z.string().optional(),
+            ordre: z.string().optional()
         })
     ).optional(),
     ampliateurs: z.array(
         z.object({
             id: z.string().optional(),
             action: z.string().optional(),
+            ordre: z.string().optional()
         })
     ).optional(),
     priority: z.enum(["FAIBLE", "MOYENNE", "HAUTE"]),

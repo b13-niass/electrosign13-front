@@ -9,6 +9,9 @@ const endpointConfig = {
     resetPassword: '/reset-password',
     getAllUser: '/private/users/all',
     createDemande: '/private/demandes',
+    getDemandesEnvoyees: '/private/demandes/envoyees',
+    getDemandesRecues: '/private/demandes/recues',
+    getDashboardData: '/private/demandes/dashboard'
 }
 
 export default endpointConfig

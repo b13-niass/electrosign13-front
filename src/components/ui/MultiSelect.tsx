@@ -1,3 +1,5 @@
+"use client"
+
 import * as React from "react"
 import { X } from "lucide-react"
 import { Badge } from "@/components/shadcn-ui/badge"
@@ -11,6 +13,15 @@ import {
 } from "@/components/shadcn-ui/command"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/shadcn-ui/popover"
 import { cn } from "@/lib/utils"
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from "@dnd-kit/core"
+import {
+    arrayMove,
+    SortableContext,
+    sortableKeyboardCoordinates,
+    useSortable,
+    verticalListSortingStrategy,
+} from "@dnd-kit/sortable"
+import { CSS } from "@dnd-kit/utilities"
 
 export type Option = {
     label: string
@@ -28,6 +39,43 @@ interface MultiSelectProps {
     titre?: string
 }
 
+// Sortable Badge component
+const SortableBadge = ({ value, option, handleUnselect, index }) => {
+    const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: value })
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+    }
+
+    return (
+        <Badge
+            ref={setNodeRef}
+            style={style}
+            key={value}
+            variant="secondary"
+            className="flex items-center gap-1 px-2 py-1 cursor-move"
+            {...attributes}
+            {...listeners}
+        >
+      <span className="bg-primary text-primary-foreground rounded-full w-5 h-5 flex items-center justify-center text-xs mr-1">
+        {index + 1}
+      </span>
+            {option?.label}
+            <button
+                type="button"
+                className="ml-1 rounded-full outline-none ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                onClick={(e) => {
+                    e.stopPropagation()
+                    handleUnselect(value)
+                }}
+            >
+                <X className="h-3 w-3" />
+            </button>
+        </Badge>
+    )
+}
+
 export function MultiSelect({
                                 options,
                                 selected,
@@ -40,6 +88,13 @@ export function MultiSelect({
                             }: MultiSelectProps) {
     const [open, setOpen] = React.useState(false)
 
+    const sensors = useSensors(
+        useSensor(PointerSensor),
+        useSensor(KeyboardSensor, {
+            coordinateGetter: sortableKeyboardCoordinates,
+        }),
+    )
+
     const handleUnselect = (value: string) => {
         onChange(selected.filter((item) => item !== value))
     }
@@ -49,6 +104,18 @@ export function MultiSelect({
             onChange(selected.filter((item) => item !== value))
         } else {
             onChange([...selected, value])
+        }
+    }
+
+    const handleDragEnd = (event) => {
+        const { active, over } = event
+
+        if (active.id !== over.id) {
+            const oldIndex = selected.indexOf(active.id)
+            const newIndex = selected.indexOf(over.id)
+
+            const newOrder = arrayMove(selected, oldIndex, newIndex)
+            onChange(newOrder)
         }
     }
 
@@ -67,28 +134,22 @@ export function MultiSelect({
                     >
                         <div className="flex flex-wrap gap-1">
                             {selected.length > 0 ? (
-                                selected.map((value) => {
-                                    const option = options.find((opt) => opt.value === value)
-                                    return (
-                                        <Badge
-                                            key={value}
-                                            variant="secondary"
-                                            className={cn("flex items-center gap-1 px-2 py-1", badgeClassName)}
-                                        >
-                                            {option?.label}
-                                            <button
-                                                type="button"
-                                                className="ml-1 rounded-full outline-none ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                                                onClick={(e) => {
-                                                    e.stopPropagation()
-                                                    handleUnselect(value)
-                                                }}
-                                            >
-                                                <X className="h-3 w-3" />
-                                            </button>
-                                        </Badge>
-                                    )
-                                })
+                                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                                    <SortableContext items={selected} strategy={verticalListSortingStrategy}>
+                                        {selected.map((value, index) => {
+                                            const option = options.find((opt) => opt.value === value)
+                                            return (
+                                                <SortableBadge
+                                                    key={value}
+                                                    value={value}
+                                                    option={option}
+                                                    handleUnselect={handleUnselect}
+                                                    index={index}
+                                                />
+                                            )
+                                        })}
+                                    </SortableContext>
+                                </DndContext>
                             ) : (
                                 <span className="text-muted-foreground">{placeholder}</span>
                             )}
