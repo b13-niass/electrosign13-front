@@ -20,11 +20,9 @@ AxiosBase.interceptors.request.use(
 
 AxiosBase.interceptors.response.use(
     (response) => {
-        console.log(response);
         return response
     },
     async (error: AxiosError) => {
-        console.log(error)
         await AxiosResponseIntrceptorErrorCallback(error, AxiosBase)
         return Promise.reject(error)
     },

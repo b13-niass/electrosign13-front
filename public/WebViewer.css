@@ -1,0 +1,17 @@
+/* WebViewer.css */
+.webviewer {
+    height: 100% !important;
+    width: 100% !important;
+    overflow: auto !important;
+}
+
+.webviewer iframe {
+    height: 100% !important;
+    width: 100% !important;
+}
+
+.webviewer-container {
+    height: 100% !important;
+    width: 100% !important;
+    overflow: auto !important;
+}

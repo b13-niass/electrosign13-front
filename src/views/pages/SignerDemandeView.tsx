@@ -1,177 +1,306 @@
-import React, { useEffect, useRef, useState } from "react"
-import { Check, FileText, Pen } from "lucide-react"
+import { useEffect, useState } from "react"
+import { Check, FileText, Pen, ThumbsUp } from "lucide-react"
+import { useParams, useNavigate } from "react-router-dom"
+import { toast } from "sonner"
 
-import { Button } from "@/components/shadcn-ui/button"
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/shadcn-ui/card"
 import { Label } from "@/components/shadcn-ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/shadcn-ui/radio-group"
 import { cn } from "@/lib/utils"
-import { Meta } from '@/@types/routes'
-import { Button as ButtonDefault } from '@/components/ui/Button'
-import { useParams } from 'react-router-dom'
-
-// interface DocumentViewerProps extends Meta{
-//     documentId: string
-// }
+import { Button as ButtonDefault } from "@/components/ui/Button"
+import { useSessionUser } from "@/store/authStore"
+import type { SignatureRequest, SignatureStatus } from "@/@types"
+import demandeServices from "@/services/DemandeService"
+import { base64ToFile } from "@/utils/fileManagement"
+import WebViewerPdfDocument from "@/components/ui/WebViewerPdfDocument"
+import WebViewerPdfBiometric from '@/components/ui/WebViewerPdfBiometric'
 
 type SignatureType = "biometrique" | "electronique"
-// { documentId }: DocumentViewerProps
+
 export default function SignerDemandeView() {
     const [signatureType, setSignatureType] = useState<SignatureType>("electronique")
     const [isLoading, setIsLoading] = useState(true)
-    const [documentTitle, setDocumentTitle] = useState("")
-    const viewerRef = useRef<HTMLDivElement>(null)
-    const [instance, setInstance] = useState<any>(null)
-    const { documentId } = useParams();
-    console.log(documentId)
-    // Simuler le chargement des données du document
+    const [isSigning, setIsSigning] = useState(false)
+    const [isApproving, setIsApproving] = useState(false)
+    const [demande, setDemande] = useState<SignatureRequest | null>(null)
+    const [documentFile, setDocumentFile] = useState<File | null>(null)
+    const { documentId } = useParams()
+    const { user } = useSessionUser()
+    const navigate = useNavigate()
+
+    const isSender = demande?.sender?.id === user?.id
+    const [isCurrentSigner, setIsCurrentSigner] = useState<boolean>(false)
+    const [isCurrentApprobateur, setIsCurrentApprobateur] = useState<boolean>(false)
+
     useEffect(() => {
-        const fetchDocumentData = async () => {
-            // Simulation d'une requête API
-            await new Promise((resolve) => setTimeout(resolve, 1000))
-
-            // Données fictives
-            setDocumentTitle(`Document #${documentId}`)
-            setIsLoading(false)
-        }
-
-        fetchDocumentData()
-    }, [documentId])
-
-    // Initialiser WebViewer
-    useEffect(() => {
-        const initWebViewer = async () => {
-            if (viewerRef.current && !instance) {
-                try {
-                    // Importer WebViewer dynamiquement
-                    const WebViewer = (await import("@pdftron/webviewer")).default
-
-                    const webViewerInstance = await WebViewer(
-                        {
-                            path: "/webviewer/lib", // Chemin vers les fichiers WebViewer
-                            initialDoc: `/documents/sample-${documentId}.pdf`, // Document à afficher
-                            licenseKey: "votre-clé-de-licence", // Remplacer par votre clé de licence
-                            fullAPI: true,
-                            enableAnnotations: true,
-                        },
-                        viewerRef.current,
-                    )
-
-                    setInstance(webViewerInstance)
-
-                    // Configurer WebViewer après initialisation
-                    const { documentViewer, annotationManager } = webViewerInstance.Core
-
-                    documentViewer.addEventListener("documentLoaded", () => {
-                        console.log("Document chargé avec succès")
-                    })
-                } catch (error) {
-                    console.error("Erreur lors de l'initialisation de WebViewer:", error)
+        const fetchData = async () => {
+            if (!documentId) return
+            setIsLoading(true)
+            try {
+                // Récupérer les informations de la demande
+                const demandeResponse = await demandeServices.getDemandeById(documentId)
+                if (demandeResponse.data != null) {
+                    setDemande(demandeResponse.data)
+                    setIsCurrentSigner(demandeResponse.data.currentUserSigner!)
+                    setIsCurrentApprobateur(demandeResponse.data.currentUserApprobateur!)
+                    // Récupérer le document PDF
+                    const documentResponse = await demandeServices.getDocumentByDemandeId(documentId)
+                    if (documentResponse.data) {
+                        // Créer un objet File à partir du Blob
+                        const contenuBase64 = documentResponse.data.contenuBase64!
+                        const file = base64ToFile(contenuBase64, documentResponse.data.nom!, "application/pdf")
+                            setDocumentFile(file)
+                    }
                 }
+            } catch (error) {
+                console.error("Erreur lors de la récupération des données:", error)
+                toast.error("Impossible de charger la demande ou le document")
+            } finally {
+                setIsLoading(false)
             }
         }
-
-        if (!isLoading) {
-            initWebViewer()
-        }
-
-        // Nettoyage lors du démontage du composant
-        return () => {
-            if (instance) {
-                instance.Core.documentViewer.closeDocument()
-            }
-        }
-    }, [isLoading, documentId, instance])
+        fetchData()
+    }, [documentId])
 
     const handleSignatureTypeChange = (value: string) => {
         setSignatureType(value as SignatureType)
     }
 
-    const handleSendDocument = () => {
-        console.log(`Document envoyé avec signature ${signatureType}`)
-        // Logique d'envoi du document signé
+    const handleSignDocument = async () => {
+        if (!documentId) return
+
+        setIsSigning(true)
+        try {
+            // Appel à l'API pour signer le document
+            // await demandeServices.signerDemande(id)
+            toast.success("Document signé avec succès")
+            navigate("/demandes") // Redirection vers la liste des demandes
+        } catch (error) {
+            console.error("Erreur lors de la signature:", error)
+            toast.error("Impossible de signer le document")
+        } finally {
+            setIsSigning(false)
+        }
+    }
+
+    const handleApproveDocument = async () => {
+        if (!documentId) return
+
+        setIsApproving(true)
+        try {
+            // Appel à l'API pour approuver le document
+            // await demandeServices.approuverDemande(id)
+            toast.success("Document approuvé avec succès")
+            navigate("/demandes") // Redirection vers la liste des demandes
+        } catch (error) {
+            console.error("Erreur lors de l'approbation:", error)
+            toast.error("Impossible d'approuver le document")
+        } finally {
+            setIsApproving(false)
+        }
+    }
+
+    if (isLoading) {
+        return (
+            <div className="flex items-center justify-center h-[calc(100vh-200px)]">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            </div>
+        )
+    }
+
+    if (!demande) {
+        return (
+            <div className="flex flex-col items-center justify-center h-[calc(100vh-200px)]">
+                <FileText className="h-16 w-16 text-muted-foreground mb-4" />
+                <h2 className="text-xl font-semibold mb-2">Demande non trouvée</h2>
+                <p className="text-muted-foreground mb-4">
+                    La demande que vous recherchez n&apos;existe pas ou a été supprimée.
+                </p>
+                <ButtonDefault
+                    onClick={() => navigate("/demandes")}
+                    className="bg-blue-500 text-white hover:bg-blue-400 hover:text-white hover:border-none hover:ring-0"
+                >
+                    Retour aux demandes
+                </ButtonDefault>
+            </div>
+        )
     }
 
     return (
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-            {/* Panneau de gauche - Options de signature */}
-            <div className="lg:col-span-1">
-                <Card className="h-full">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <FileText className="h-5 w-5" />
-                            <span>Type de signature</span>
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="h-full">
-                        <RadioGroup value={signatureType} onValueChange={handleSignatureTypeChange} className="space-y-4">
-                            <div className="flex items-start space-x-3 space-y-0">
-                                <RadioGroupItem value="biometrique" id="biometrique" />
-                                <div className="grid gap-1.5">
-                                    <Label htmlFor="biometrique" className="font-medium">
-                                        Biométrique
-                                    </Label>
-                                    <p className="text-sm text-muted-foreground">Signature manuscrite capturée sur un appareil tactile</p>
-                                </div>
-                            </div>
-                            <div className="flex items-start space-x-3 space-y-0">
-                                <RadioGroupItem value="electronique" id="electronique" />
-                                <div className="grid gap-1.5">
-                                    <Label htmlFor="electronique" className="font-medium">
-                                        Électronique
-                                    </Label>
-                                    <p className="text-sm text-muted-foreground">Signature électronique avec certificat numérique</p>
-                                </div>
-                            </div>
-                        </RadioGroup>
+        <div className="flex flex-col">
+            {/* En-tête avec les informations de la demande */}
+            <div className="bg-white p-4 rounded-lg shadow-sm mb-4">
+                <h1 className="text-xl font-bold mb-2">{demande.titre}</h1>
+                <p className="text-muted-foreground mb-4">{demande.description}</p>
+                <div className="flex flex-wrap gap-4 text-sm">
+                    <div>
+                        <span className="font-medium">Statut:</span>{" "}
+                        <span
+                            className={cn(
+                                "px-2 py-1 rounded-full text-xs",
+                                demande.status === "SIGNEE"
+                                    ? "bg-green-100 text-green-800"
+                                    : demande.status === "REFUSEE"
+                                        ? "bg-red-100 text-red-800"
+                                        : "bg-yellow-100 text-yellow-800",
+                            )}
+                        >
+              {formatStatus(demande.status)}
+            </span>
+                    </div>
+                    <div>
+                        <span className="font-medium">Date limite:</span> {formatDate(demande.dateLimite)}
+                    </div>
+                    <div>
+                        <span className="font-medium">Créé par:</span> {demande.sender?.prenom} {demande.sender?.nom}
+                    </div>
+                </div>
+            </div>
 
-                        <div className="mt-8">
-                            <h3 className="text-sm font-medium mb-2">Aperçu de la signature</h3>
-                            <div
-                                className={cn(
-                                    "flex items-center justify-center border rounded-md p-4 h-24",
-                                    signatureType === "biometrique" ? "bg-gray-50" : "",
-                                )}
-                            >
-                                {signatureType === "biometrique" ? (
-                                    <div className="text-center text-muted-foreground">
-                                        <Pen className="h-5 w-5 mx-auto mb-1" />
-                                        <span className="text-xs">Signature manuscrite</span>
-                                    </div>
+            {/* Contenu principal avec flexbox */}
+            <div className="flex flex-grow">
+                {/* Panneau de gauche - Options de signature (affiché conditionnellement) */}
+                {(isCurrentSigner || isCurrentApprobateur) && (
+                    <div className="w-1/3 pr-4">
+                        <div className="bg-white rounded-lg shadow-sm h-full flex flex-col">
+                            <div className="p-4 border-b">
+                                <h2 className="text-lg font-semibold flex items-center gap-2">
+                                    {isCurrentSigner ? (
+                                        <>
+                                            <Pen className="h-5 w-5" />
+                                            <span>Type de signature</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <ThumbsUp className="h-5 w-5" />
+                                            <span>Approbation</span>
+                                        </>
+                                    )}
+                                </h2>
+                            </div>
+
+                            <div className="p-4 flex-grow">
+                                {isCurrentSigner ? (
+                                    <>
+                                        <RadioGroup value={signatureType} onValueChange={handleSignatureTypeChange} className="space-y-4">
+                                            <div className="flex items-start space-x-3 space-y-0">
+                                                <RadioGroupItem value="biometrique" id="biometrique" />
+                                                <div className="grid gap-1.5">
+                                                    <Label htmlFor="biometrique" className="font-medium">
+                                                        Biométrique
+                                                    </Label>
+                                                    <p className="text-sm text-muted-foreground">
+                                                        Signature manuscrite capturée sur un appareil tactile
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-start space-x-3 space-y-0">
+                                                <RadioGroupItem value="electronique" id="electronique" />
+                                                <div className="grid gap-1.5">
+                                                    <Label htmlFor="electronique" className="font-medium">
+                                                        Électronique
+                                                    </Label>
+                                                    <p className="text-sm text-muted-foreground">
+                                                        Signature électronique avec certificat numérique
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </RadioGroup>
+                                    </>
                                 ) : (
-                                    <div className="text-center text-muted-foreground">
-                                        <Check className="h-5 w-5 mx-auto mb-1" />
-                                        <span className="text-xs">Signature électronique</span>
+                                    <div className="space-y-4">
+                                        <p className="text-sm">
+                                            Vous êtes invité à approuver ce document avant qu&apos;il ne soit envoyé aux signataires.
+                                        </p>
+                                        <p className="text-sm">Veuillez examiner attentivement le document avant de l&apos;approuver.</p>
                                     </div>
+                                )}
+                            </div>
+
+                            <div className="p-4 border-t">
+                                {isCurrentSigner ? (
+                                    <ButtonDefault
+                                        onClick={handleSignDocument}
+                                        disabled={isSigning}
+                                        loading={isSigning}
+                                        className="bg-blue-500 w-full text-white hover:bg-blue-400 hover:text-white hover:border-none hover:ring-0"
+                                    >
+                                        Signer le document
+                                    </ButtonDefault>
+                                ) : (
+                                    <ButtonDefault
+                                        onClick={handleApproveDocument}
+                                        disabled={isApproving}
+                                        loading={isApproving}
+                                        className="bg-green-500 w-full text-white hover:bg-green-400 hover:text-white hover:border-none hover:ring-0"
+                                    >
+                                        Approuver le document
+                                    </ButtonDefault>
                                 )}
                             </div>
                         </div>
-                    </CardContent>
-                    <CardFooter className="">
-                        <ButtonDefault className="bg-blue-500 w-full text-white hover:bg-blue-400 hover:text-white hover:border-none hover:ring-0">
-                            Envoyer
-                        </ButtonDefault>
-                    </CardFooter>
-                </Card>
-            </div>
+                    </div>
+                )}
 
-            {/* Panneau de droite - Visualiseur PDF */}
-            <div className="lg:col-span-2">
-                <Card className="h-full">
-                    <CardHeader className="border-b">
-                        <CardTitle>{documentTitle || "Chargement du document..."}</CardTitle>
-                    </CardHeader>
-                    <CardContent className="p-0 h-[calc(100vh-16rem)]">
-                        {isLoading ? (
-                            <div className="flex items-center justify-center h-full">
-                                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-                            </div>
-                        ) : (
-                            <div ref={viewerRef} className="h-full w-full" />
-                        )}
-                    </CardContent>
-                </Card>
+                {/* Panneau de droite - Visualiseur PDF */}
+                <div
+                    className={cn(
+                        "bg-white rounded-lg shadow-sm flex flex-col",
+                        isCurrentSigner || isCurrentApprobateur ? "w-2/3" : "w-full",
+                    )}
+                >
+                    <div className="p-4 border-b">
+                        <h2 className="text-lg font-semibold">{demande.titre || "Document"}</h2>
+                    </div>
+                    <div className="flex-grow">
+                        <div className="h-full w-full">
+                            {
+                                signatureType === "electronique"
+                                ?  <WebViewerPdfDocument
+                                        file={documentFile}
+                                        restrictedMode= "electronique"
+                                    />
+                                    :  <WebViewerPdfBiometric
+                                        file={documentFile}
+                                        restrictedMode= "biometrique"
+                                    />
+                            }
+                            {/*<WebViewerPdfDocument*/}
+                            {/*    file={documentFile}*/}
+                            {/*    restrictedMode={isCurrentSigner ? signatureType : ""}*/}
+                            {/*/>*/}
+
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     )
 }
+
+// Fonction utilitaire pour formater le statut
+function formatStatus(status: SignatureStatus): string {
+    switch (status) {
+        case "EN_ATTENTE_APPROBATION":
+            return "En attente d'approbation"
+        case "APPROUVEE":
+            return "Approuvée"
+        case "EN_ATTENTE_SIGNATURE":
+            return "En attente de signature"
+        case "SIGNEE":
+            return "Signée"
+        case "REFUSEE":
+            return "Refusée"
+        case "ANNULEE":
+            return "Annulée"
+        default:
+            return status
+    }
+}
+
+// Fonction utilitaire pour formater la date
+function formatDate(date: Date | string): string {
+    if (!date) return ""
+    const d = new Date(date)
+    return d.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" })
+}
+

@@ -82,6 +82,7 @@ function AuthProvider({ children }: AuthProviderProps) {
                 handleSignIn({ accessToken: resp.data.access_token }, resp.data.user)
                 Cookies.set("refresh_token", resp.data.refresh_token, { secure: true, sameSite: "Strict" });
                 redirect()
+                // navigate("/home")
                 return {
                     status: 'OK',
                     message: "connection established",

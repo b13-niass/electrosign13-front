@@ -82,6 +82,7 @@ export type Participant = {
     currentSigner: boolean
     ordre: number
     action: string
+    signature?: string
 }
 
 export type SignatureRequest = {
@@ -106,4 +107,12 @@ export type SignatureRequest = {
     }
     isCurrentUserSigner: boolean
     isCurrentUserApprobateur: boolean
+    currentUserSigner?: boolean
+    currentUserApprobateur?: boolean
+}
+
+export type DocumentBase64 = {
+    nom?: string
+    type?: string
+    contenuBase64?: string
 }

@@ -1,5 +1,5 @@
 import ApiService from '@/services/ApiService'
-import { ApiResponseFormat, SignatureRequest } from '@/@types'
+import { ApiResponseFormat, DocumentBase64, SignatureRequest } from '@/@types'
 import endpointConfig from '@/configs/endpoint.config'
 import { format } from 'date-fns'
 
@@ -78,6 +78,24 @@ class DemandeServices {
     async getDemandesRecues(){
         return ApiService.fetchDataWithAxios<ApiResponseFormat<SignatureRequest[]>>({
             url: endpointConfig.getDemandesRecues,
+            method: 'get',
+        });
+    }
+
+    async getDemandeById(idDemande: string){
+        return ApiService.fetchDataWithAxios<ApiResponseFormat<SignatureRequest>>({
+            url: endpointConfig.getDemandeById.replace(':idDemande', idDemande),
+            method: 'get',
+        });
+    }
+
+    async getDocumentByDemandeId(idDemande: string, type?: string){
+        let url = endpointConfig.getDocumentByDemandeId.replace(':idDemande', idDemande);
+        if(type){
+            url += `?type=${type}`;
+        }
+        return ApiService.fetchDataWithAxios<ApiResponseFormat<DocumentBase64>>({
+            url: url,
             method: 'get',
         });
     }
