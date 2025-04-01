@@ -1,16 +1,23 @@
-import { useEffect, useRef, useState } from "react"
-import WebViewer, { Core } from '@pdftron/webviewer'
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react'
+import WebViewer, { Core, WebViewerInstance } from '@pdftron/webviewer'
 import { FileText } from "lucide-react"
+import { fileToBase64 } from '@/utils/fileManagement'
+import { callback } from 'chart.js/helpers'
 
 interface WebViewerPdfProps {
     file?: File | null
-    restrictedMode?: string
+    signature?: string
+    setSignature?: () => void
+    setSignedFile?: (file: File) => void
+}
+export interface WebViewerPdfBiometricRef{
+    getPdfFile: () => Promise<void>
 }
 
-export default function WebViewerPdfBiometric({ file, restrictedMode = 'electronique' }: WebViewerPdfProps) {
+const WebViewerPdfBiometric = forwardRef<WebViewerPdfBiometricRef, WebViewerPdfProps>( function WebViewerPdfBiometric({ file, signature, setSignature, setSignedFile}, ref) {
     const viewersbio = useRef<HTMLDivElement>(null)
     const [isLoading, setIsLoading] = useState(true)
-
+    const [instance, setInstance] = useState<WebViewerInstance>()
     useEffect(() => {
         if (!file || !viewersbio.current) return
 
@@ -28,12 +35,13 @@ export default function WebViewerPdfBiometric({ file, restrictedMode = 'electron
                 const instancebio = await WebViewer(
                     {
                         path: "/webviewer/public",
-                        licenseKey: "demo:1742976837142:61288cf803000000000472f1cd0f0705d57cd6722e3aa3dc8ed87eef9c"
+                        licenseKey: "demo:1742976837142:61288cf803000000000472f1cd0f0705d57cd6722e3aa3dc8ed87eef9c",
+                        fullAPI: true,
                     },
                     viewersbio.current!,
                 )
-
                 instancebio.UI.loadDocument(blob, { filename: file.name })
+                const { documentViewer, PDFNet, annotationManager } = instancebio.Core;
 
                 // 🎨 Personnalisation de l'interface
                 instancebio.UI.setTheme("light")
@@ -59,15 +67,6 @@ export default function WebViewerPdfBiometric({ file, restrictedMode = 'electron
                     'panToolButton'
                 ]);
 
-                        // const documentEl = event.target.shadowRoot.children.app.querySelector(".document");
-
-                if (restrictedMode == 'electronique') {
-                    // instancebio.UI.disableElements(['all']);
-                }
-                if (restrictedMode == 'biometrique') {
-                    console.log("ICI")
-                    // instancebio.UI.openElements(["signatureModal"]);
-                }
                 setIsLoading(false)
 
                 function createSignatureButton() {
@@ -129,6 +128,8 @@ export default function WebViewerPdfBiometric({ file, restrictedMode = 'electron
                     const webviewer = (document.getElementById("root")!).querySelector(".webviewer")
                     const shadowRoot = webviewer?.children[0].shadowRoot
                     const headerGroupItem = shadowRoot?.querySelector(".GroupedItems")
+                    // const filePdf =
+                    setInstance(instancebio)
 
                     if (headerGroupItem) {
                         const existingSignatureButton = headerGroupItem.querySelector('[data-element="signatureToolButton"]');
@@ -144,16 +145,100 @@ export default function WebViewerPdfBiometric({ file, restrictedMode = 'electron
                         console.warn('Could not find header group item');
                     }
                 })
+                instancebio.Core.documentViewer.addEventListener('annotationsLoaded', async () => {
+                    instancebio.Core.annotationManager.addEventListener('annotationChanged', async (annotationList) => {
+                        for (const annotation of annotationList) {
+                            if (annotation.Subject === "Signature"){
+                               try {
+                                   await PDFNet.initialize();
+                                   const doc = await documentViewer.getDocument().getPDFDoc();
+
+                                   // export annotations from the document
+                                   const annots = await annotationManager.exportAnnotations();
+
+                                   // Run PDFNet methods with memory management
+                                   await PDFNet.runWithCleanup(async () => {
+
+                                       // lock the document before a write operation
+                                       // runWithCleanup will auto unlock when complete
+                                       await doc.lock();
+
+                                       // import annotations to PDFNet
+                                       const fdf_doc = await PDFNet.FDFDoc.createFromXFDF(annots);
+                                       await doc.fdfUpdate(fdf_doc);
+
+                                       // flatten all annotations in the document
+                                       await doc.flattenAnnotations();
+
+                                       // or optionally only flatten forms
+                                       // await doc.flattenAnnotations(true);
+
+                                       // clear the original annotations
+                                       annotationManager.deleteAnnotations(annotationManager.getAnnotationsList());
+
+                                       // optionally only clear widget annotations if forms were only flattened
+                                       // const widgetAnnots = annots.filter(a => a instanceof Annotations.WidgetAnnotation);
+                                       // annotationManager.deleteAnnotations(widgetAnnots);
+                                   }, "demo:1742976837142:61288cf803000000000472f1cd0f0705d57cd6722e3aa3dc8ed87eef9c");
+
+                                   // clear the cache (rendered) data with the newly updated document
+                                   documentViewer.refreshAll();
+
+                                   // Update viewer to render with the new document
+                                   documentViewer.updateView();
+
+                                   // Refresh searchable and selectable text data with the new document
+                                   documentViewer.getDocument().refreshTextData();
+                               }catch (error) {
+                                   console.log(error)
+                               }
+                            }
+                        }
+                    })
+                });
+
             }
         }
 
         loadPDF()
-        // const webviewer = (document.getElementById("root")!).querySelector(".webviewer")
-        // setTimeout(() => {
-        //     console.log(webviewer?.childNodes[0]);
-        // }, 100);
 
-    }, [file, restrictedMode])
+    }, [file])
+
+    async function getModifiedPdfFile() {
+        try {
+            const documentViewer = instance!.Core.documentViewer;
+            const annotationManager = documentViewer.getAnnotationManager();
+            const document = documentViewer.getDocument();
+
+            if (!document) {
+                console.warn('No document loaded');
+                return;
+            }
+
+            const xfdfString = await annotationManager.exportAnnotations()
+
+            // Get file data
+            const data = await document.getFileData({
+                xfdfString,
+                flatten: true,
+                includeAnnotations: true,
+            });
+
+            // Create File object
+            const modifiedFile = new File([data], document.getFilename() || 'signed-document.pdf', {
+                type: 'application/pdf'
+            });
+
+            if (modifiedFile){
+                setSignedFile!(modifiedFile)
+            }
+        } catch (error) {
+            console.error('Error getting PDF file:', error);
+        }
+    }
+    useImperativeHandle(ref, () => ({
+        getPdfFile:  () =>  getModifiedPdfFile(),
+    }));
 
     if (!file) {
         return (
@@ -177,4 +262,6 @@ export default function WebViewerPdfBiometric({ file, restrictedMode = 'electron
             <div ref={viewersbio} className="webviewer w-full h-full"></div>
         </div>
     )
-}
+})
+
+export default WebViewerPdfBiometric

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from 'react'
 import { Check, FileText, Pen, ThumbsUp } from "lucide-react"
 import { useParams, useNavigate } from "react-router-dom"
 import { toast } from "sonner"
@@ -10,9 +10,10 @@ import { Button as ButtonDefault } from "@/components/ui/Button"
 import { useSessionUser } from "@/store/authStore"
 import type { SignatureRequest, SignatureStatus } from "@/@types"
 import demandeServices from "@/services/DemandeService"
-import { base64ToFile } from "@/utils/fileManagement"
+import { base64ToFile, fileToBase64 } from '@/utils/fileManagement'
 import WebViewerPdfDocument from "@/components/ui/WebViewerPdfDocument"
-import WebViewerPdfBiometric from '@/components/ui/WebViewerPdfBiometric'
+import WebViewerPdfBiometric, { WebViewerPdfBiometricRef } from '@/components/ui/WebViewerPdfBiometric'
+import { string } from 'zod'
 
 type SignatureType = "biometrique" | "electronique"
 
@@ -25,8 +26,10 @@ export default function SignerDemandeView() {
     const [documentFile, setDocumentFile] = useState<File | null>(null)
     const { documentId } = useParams()
     const { user } = useSessionUser()
+    const [userSignature, setUserSignature] = useState<string>("")
+    const [signedFile, setSignedFile] = useState<File|null>(null)
     const navigate = useNavigate()
-
+    const webViewerPdfBiometricRef = useRef<WebViewerPdfBiometricRef>(null)
     const isSender = demande?.sender?.id === user?.id
     const [isCurrentSigner, setIsCurrentSigner] = useState<boolean>(false)
     const [isCurrentApprobateur, setIsCurrentApprobateur] = useState<boolean>(false)
@@ -61,6 +64,15 @@ export default function SignerDemandeView() {
         fetchData()
     }, [documentId])
 
+    useEffect( () => {
+        async function getString (){
+            const fileBase64 = await fileToBase64(signedFile!);
+            console.log(fileBase64)
+        }
+        getString();
+
+    }, [signedFile])
+
     const handleSignatureTypeChange = (value: string) => {
         setSignatureType(value as SignatureType)
     }
@@ -70,10 +82,14 @@ export default function SignerDemandeView() {
 
         setIsSigning(true)
         try {
+            if (webViewerPdfBiometricRef.current){
+                await webViewerPdfBiometricRef.current.getPdfFile()
+            }
             // Appel à l'API pour signer le document
             // await demandeServices.signerDemande(id)
-            toast.success("Document signé avec succès")
-            navigate("/demandes") // Redirection vers la liste des demandes
+            // toast.success("Document signé avec succès")
+            // navigate("/demandes") // Redirection vers la liste des demandes
+
         } catch (error) {
             console.error("Erreur lors de la signature:", error)
             toast.error("Impossible de signer le document")
@@ -97,6 +113,13 @@ export default function SignerDemandeView() {
         } finally {
             setIsApproving(false)
         }
+    }
+
+    const onUserSetSignature = () => {
+        setUserSignature("")
+    }
+    const onGetSignedFile = (file: File) => {
+        setSignedFile(file)
     }
 
     if (isLoading) {
@@ -260,14 +283,13 @@ export default function SignerDemandeView() {
                                         restrictedMode= "electronique"
                                     />
                                     :  <WebViewerPdfBiometric
+                                        ref={webViewerPdfBiometricRef}
                                         file={documentFile}
-                                        restrictedMode= "biometrique"
+                                        signature={userSignature}
+                                        setSignature={onUserSetSignature}
+                                        setSignedFile={onGetSignedFile}
                                     />
                             }
-                            {/*<WebViewerPdfDocument*/}
-                            {/*    file={documentFile}*/}
-                            {/*    restrictedMode={isCurrentSigner ? signatureType : ""}*/}
-                            {/*/>*/}
 
                         </div>
                     </div>

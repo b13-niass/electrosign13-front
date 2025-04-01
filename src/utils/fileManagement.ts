@@ -9,3 +9,12 @@ export const base64ToFile = (base64: string, fileName: string, mimeType: string)
 
     return new File([blob], fileName, { type: mimeType });
 };
+
+export const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file); // Converts file to Base64
+        reader.onload = () => resolve(reader.result as string); // Returns Base64 string
+        reader.onerror = (error) => reject(error);
+    });
+};

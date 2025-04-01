@@ -17,7 +17,7 @@ type PdfUploadProps = {
 export type PdfUploadRef = {
     clearFile: () => void;
 };
-const PdfUpload = forwardRef<PdfUploadRef, PdfUploadProps>(({ onUploadFile }, ref) => {
+const PdfUpload = forwardRef<PdfUploadRef, PdfUploadProps>(function PdfUpload({ onUploadFile }, ref) {
     const [file, setFile] = useState<File | null>(null)
     const [status, setStatus] = useState<UploadStatus>("idle")
     const [progress, setProgress] = useState(0)
