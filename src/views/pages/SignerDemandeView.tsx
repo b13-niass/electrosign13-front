@@ -64,14 +64,14 @@ export default function SignerDemandeView() {
         fetchData()
     }, [documentId])
 
-    useEffect( () => {
-        async function getString (){
-            const fileBase64 = await fileToBase64(signedFile!);
-            console.log(fileBase64)
-        }
-        getString();
-
-    }, [signedFile])
+    // useEffect( () => {
+    //     async function getString (){
+    //         const fileBase64 = await fileToBase64(signedFile!);
+    //         console.log(fileBase64)
+    //     }
+    //     getString();
+    //
+    // }, [signedFile])
 
     const handleSignatureTypeChange = (value: string) => {
         setSignatureType(value as SignatureType)
@@ -82,9 +82,9 @@ export default function SignerDemandeView() {
 
         setIsSigning(true)
         try {
-            if (webViewerPdfBiometricRef.current){
-                await webViewerPdfBiometricRef.current.getPdfFile()
-            }
+            // if (webViewerPdfBiometricRef.current){
+            //     await webViewerPdfBiometricRef.current.getPdfFile()
+            // }
             // Appel à l'API pour signer le document
             // await demandeServices.signerDemande(id)
             // toast.success("Document signé avec succès")
