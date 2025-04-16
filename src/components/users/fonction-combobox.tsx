@@ -14,26 +14,17 @@ import {
 } from "@/components/shadcn-ui/command"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/shadcn-ui/popover"
 
-// Données fictives pour les fonctions - réduites pour améliorer les performances
-const fonctions = [
-    { value: 1, label: "Directeur" },
-    { value: 2, label: "Responsable RH" },
-    { value: 3, label: "Développeur" },
-    { value: 4, label: "Designer" },
-    { value: 5, label: "Chef de projet" },
-]
-
 interface FonctionComboboxProps {
     value: number | undefined
     onChange: (value: number) => void
+    fonctions: {value: number, label: string}[]
 }
 
-export function FonctionCombobox({ value, onChange }: FonctionComboboxProps) {
+export function FonctionCombobox({ value, onChange,fonctions }: FonctionComboboxProps) {
     const [open, setOpen] = useState(false)
     const [searchTerm, setSearchTerm] = useState("")
     const [filteredFonctions, setFilteredFonctions] = useState(fonctions)
 
-    // Filtrer les fonctions en fonction du terme de recherche
     useEffect(() => {
         if (searchTerm) {
             const filtered = fonctions.filter((fonction) => fonction.label.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -41,9 +32,8 @@ export function FonctionCombobox({ value, onChange }: FonctionComboboxProps) {
         } else {
             setFilteredFonctions(fonctions)
         }
-    }, [searchTerm])
+    }, [searchTerm, fonctions])
 
-    // Trouver le label de la fonction sélectionnée
     const selectedFonction = fonctions.find((fonction) => fonction.value === value)
 
     return (

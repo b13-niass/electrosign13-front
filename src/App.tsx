@@ -11,6 +11,7 @@ if (appConfig.enableMock) {
 }
 
 function App() {
+
     return (
         <Theme>
             <BrowserRouter>

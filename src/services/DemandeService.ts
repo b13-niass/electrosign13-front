@@ -25,6 +25,12 @@ export type UserDemande = {
     ordre: string
 }
 
+export type SignerDemande = {
+    demandeId: string,
+    file: File,
+    signature?: string,
+}
+
 class DemandeServices {
     async create(data: DemandeCredentials) {
         const formData = new FormData();
@@ -102,6 +108,28 @@ class DemandeServices {
     async getDashboardData(){
         return ApiService.fetchDataWithAxios<ApiResponseFormat<undefined>>({
             url: endpointConfig.getDashboardData,
+            method: 'get',
+        });
+    }
+
+    async signerDemande(data: SignerDemande){
+        return ApiService.fetchDataWithAxios<ApiResponseFormat<SignatureRequest>>({
+            url: endpointConfig.signerDemande,
+            method: 'post',
+            headers: { 'Content-Type': 'multipart/form-data' },
+            data
+        });
+    }
+
+    async approuverDemande(idDemande: string){
+        return ApiService.fetchDataWithAxios<ApiResponseFormat<SignatureRequest>>({
+            url: endpointConfig.approuverDemande.replace(':idDemande', idDemande),
+            method: 'get',
+        });
+    }
+    async rejeterDemande(idDemande: string){
+        return ApiService.fetchDataWithAxios<ApiResponseFormat<SignatureRequest>>({
+            url: endpointConfig.rejeterDemande.replace(':idDemande', idDemande),
             method: 'get',
         });
     }

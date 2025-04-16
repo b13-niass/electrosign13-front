@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo, useCallback } from "react"
+import React, { useState, useMemo, useCallback } from "react"
 import {
     type ColumnDef,
     type ColumnFiltersState,
@@ -21,27 +21,31 @@ import { EditUserDialog } from "./edit-user-dialog"
 import { MoreHorizontal, Edit, UserX, UserCheck } from "lucide-react"
 import type { AddUser } from "@/@types"
 import { toast } from "sonner"
+import userService from '@/services/UserService'
 
 // Données fictives
-const dummyUsers: AddUser[] = [
-    { id: "1", prenom: "Jean", nom: "Dupont", email: "jean.dupont@example.com", password: "********", telephone: "0123456789", photo: "/placeholder.svg?height=40&width=40", cni: "1234567890", fonctionId: 1, fonctionNom: "Directeur", roles: ["ADMIN", "USER"], active: true },
-    { id: "2", prenom: "Marie", nom: "Martin", email: "marie.martin@example.com", password: "********", telephone: "0987654321", photo: "/placeholder.svg?height=40&width=40", cni: "0987654321", fonctionId: 2, fonctionNom: "Responsable RH", roles: ["USER"], active: true },
-    { id: "3", prenom: "Pierre", nom: "Durand", email: "pierre.durand@example.com", password: "********", telephone: "0567891234", photo: "/placeholder.svg?height=40&width=40", cni: "5678912340", fonctionId: 3, fonctionNom: "Développeur", roles: ["USER"], active: false },
-]
+// const dummyUsers: AddUser[] = [
+//     { id: "1", prenom: "Jean", nom: "Dupont", email: "jean.dupont@example.com", password: "********", telephone: "0123456789", photo: "/placeholder.svg?height=40&width=40", cni: "1234567890", fonctionId: 1, fonctionNom: "Directeur", roles: ["ADMIN", "USER"], active: true },
+//     { id: "2", prenom: "Marie", nom: "Martin", email: "marie.martin@example.com", password: "********", telephone: "0987654321", photo: "/placeholder.svg?height=40&width=40", cni: "0987654321", fonctionId: 2, fonctionNom: "Responsable RH", roles: ["USER"], active: true },
+//     { id: "3", prenom: "Pierre", nom: "Durand", email: "pierre.durand@example.com", password: "********", telephone: "0567891234", photo: "/placeholder.svg?height=40&width=40", cni: "5678912340", fonctionId: 3, fonctionNom: "Développeur", roles: ["USER"], active: false },
+// ]
 
 interface UserDataTableProps {
     searchQuery: string
     statusFilter: string
+    dummyUsers: AddUser[]
+    canFetch: React.Dispatch<React.SetStateAction<boolean| undefined>>;
 }
 
-export function UserDataTable({ searchQuery, statusFilter }: UserDataTableProps) {
+export function UserDataTable({ searchQuery, statusFilter, dummyUsers, canFetch }: UserDataTableProps) {
     const [sorting, setSorting] = useState<SortingState>([])
     const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
     const [editingUser, setEditingUser] = useState<AddUser | null>(null)
     // const { toast } = useToast()
-
+    // console.log(dummyUsers)
     // Optimisation : éviter le recalcul des filtres à chaque rendu
     const filteredUsers = useMemo(() => {
+        console.log(dummyUsers);
         return dummyUsers.filter((user) => {
             const matchesSearch = searchQuery === "" ||
                 `${user.prenom} ${user.nom}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -56,13 +60,22 @@ export function UserDataTable({ searchQuery, statusFilter }: UserDataTableProps)
 
             return matchesSearch && matchesStatus
         })
-    }, [searchQuery, statusFilter])
+    }, [searchQuery, statusFilter, dummyUsers, canFetch])
 
-    const handleToggleStatus = useCallback((user: AddUser) => {
-        console.log(`Changement de statut pour ${user.prenom} ${user.nom}`)
-        toast("Statut modifié",{
-            description: `${user.prenom} ${user.nom} est maintenant ${user.active ? "inactif" : "actif"}.`,
-        })
+    const handleToggleStatus = useCallback( async (user: AddUser) => {
+        if (user.active){
+            const result1 = await userService.desactiverUser(user.id!);
+            canFetch(prevState => !prevState)
+            toast("Statut modifié",{
+                description: `${user.prenom} ${user.nom} est maintenant inactif.`,
+            })
+        }else {
+            const result2 = await userService.activerUser(user.id!);
+            canFetch(prevState => !prevState)
+            toast("Statut modifié",{
+                description: `${user.prenom} ${user.nom} est maintenant actif.`,
+            })
+        }
     }, [toast])
 
     const handleEditUser = useCallback((user: AddUser) => {
@@ -85,7 +98,7 @@ export function UserDataTable({ searchQuery, statusFilter }: UserDataTableProps)
                 const user = row.original
                 return (
                     <Avatar>
-                        <AvatarImage src={user.photo} alt={`${user.prenom} ${user.nom}`} />
+                        <AvatarImage src={user.photo as string} alt={`${user.prenom} ${user.nom}`} />
                         <AvatarFallback>{`${user.prenom.charAt(0)}${user.nom.charAt(0)}`}</AvatarFallback>
                     </Avatar>
                 )
@@ -103,14 +116,20 @@ export function UserDataTable({ searchQuery, statusFilter }: UserDataTableProps)
             ),
         },
         { accessorKey: "telephone", header: "Téléphone" },
-        { accessorKey: "fonctionNom", header: "Fonction" },
+        {
+            accessorKey: "fonctionNom",
+            header: "Fonction",
+            cell: ({row}) => {
+                return <span>{row.original.fonctionNom}</span>
+            }
+        },
         {
             accessorKey: "roles",
             header: "Rôles",
             cell: ({ row }) => (
                 <div className="flex flex-wrap gap-1">
-                    {row.original.roles.map((role) => (
-                        <Badge key={role} variant="outline">{role}</Badge>
+                    {row.original.roles.map((role, index) => (
+                        <Badge key={`${role}-${index}`} variant="outline">{role}</Badge>
                     ))}
                 </div>
             ),

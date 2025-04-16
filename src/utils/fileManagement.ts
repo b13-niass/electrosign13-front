@@ -18,3 +18,17 @@ export const fileToBase64 = (file: File): Promise<string> => {
         reader.onerror = (error) => reject(error);
     });
 };
+
+export const forcePdfExtension = (originalFile: File): File => {
+    const blob = originalFile.slice(0, originalFile.size, originalFile.type);
+
+    // Ensure it ends with `.pdf`
+    const newName = originalFile.name.toLowerCase().endsWith('.pdf')
+        ? originalFile.name
+        : originalFile.name.replace(/\.\w+$/, '') + '.pdf';
+
+    return new File([blob], newName, {
+        type: 'application/pdf',
+        lastModified: originalFile.lastModified,
+    });
+};

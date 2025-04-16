@@ -1,4 +1,7 @@
 import Dashboard from '@/components/dashboard/dashboard'
+import { useEffect } from 'react'
+import userService from '@/services/UserService'
+import type { User } from '@/@types'
 
 const Home = () => {
     return (

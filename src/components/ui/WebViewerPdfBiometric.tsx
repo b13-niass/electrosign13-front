@@ -1,25 +1,28 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react'
 import WebViewer, { Core, WebViewerInstance } from '@pdftron/webviewer'
 import { FileText } from "lucide-react"
-import { fileToBase64 } from '@/utils/fileManagement'
+import { fileToBase64, forcePdfExtension } from '@/utils/fileManagement'
 import { callback } from 'chart.js/helpers'
 import Annotations = Core.Annotations
 import { exists } from 'node:fs'
+import { useSessionUser } from '@/store/authStore'
+import DocumentViewer = Core.DocumentViewer
 
 interface WebViewerPdfProps {
     file?: File | null
-    signature?: string
-    setSignature?: () => void
+    // signature?: string
+    setSignature?: (signature: string) => void
     setSignedFile?: (file: File) => void
 }
 export interface WebViewerPdfBiometricRef{
     getPdfFile: () => Promise<void>
 }
 
-const WebViewerPdfBiometric = forwardRef<WebViewerPdfBiometricRef, WebViewerPdfProps>( function WebViewerPdfBiometric({ file, signature, setSignature, setSignedFile}, ref) {
+const WebViewerPdfBiometric = forwardRef<WebViewerPdfBiometricRef, WebViewerPdfProps>( function WebViewerPdfBiometric({ file, setSignature, setSignedFile}, ref) {
     const viewersbio = useRef<HTMLDivElement>(null)
     const [isLoading, setIsLoading] = useState(true)
     const [instance, setInstance] = useState<WebViewerInstance>()
+    const { user, setUser } = useSessionUser()
     const [isInitWebViewer, setIsInitWebViewer] = useState(false)
     useEffect(() => {
         if (!file || !viewersbio.current) return
@@ -38,16 +41,18 @@ const WebViewerPdfBiometric = forwardRef<WebViewerPdfBiometricRef, WebViewerPdfP
                 const instancebio = await WebViewer(
                     {
                         path: "/webviewer/public",
-                        licenseKey: "demo:1742976837142:61288cf803000000000472f1cd0f0705d57cd6722e3aa3dc8ed87eef9c"
+                        licenseKey: "demo:1742976837142:61288cf803000000000472f1cd0f0705d57cd6722e3aa3dc8ed87eef9c",
+                        fullAPI: true
                     },
                     viewersbio.current!,
                 )
                 instancebio.UI.loadDocument(blob, { filename: file.name })
-                const { documentViewer, PDFNet, annotationManager } = instancebio.Core;
+                const { documentViewer, PDFNet, annotationManager, Tools } = instancebio.Core;
 
                 // 🎨 Personnalisation de l'interface
                 instancebio.UI.setTheme("light")
-                instancebio.UI.setLanguage("fr")
+                await instancebio.UI.setLanguage("fr")
+                instancebio.UI.enableFeatures([instancebio.UI.Feature.Initials]);
                 instancebio.UI.disableElements([
                     "tools-header", // ✅ Disables header toolbar
                     'downloadButton',
@@ -121,10 +126,11 @@ const WebViewerPdfBiometric = forwardRef<WebViewerPdfBiometricRef, WebViewerPdfP
                         event.preventDefault();
                         // event.stopPropagation();
                         const child1 = webviewer.children[0] as HTMLElement
+                        console.log("OUI")
+                        instancebio.UI.openElements(['signatureModal']);
                         child1.remove()
                         // child2.style.position = 'absolute';
                         // child2.style.top = '0';
-                        instancebio.UI.openElements(['signatureModal']);
                     });
 
                     return signatureButton;
@@ -179,6 +185,7 @@ const WebViewerPdfBiometric = forwardRef<WebViewerPdfBiometricRef, WebViewerPdfP
                     signatureButton.addEventListener('click', (event) => {
                         event.preventDefault();
                         // event.stopPropagation();
+                        console.log("OUI")
                         instancebio.UI.openElements(['signatureModal']);
                     });
 
@@ -187,6 +194,13 @@ const WebViewerPdfBiometric = forwardRef<WebViewerPdfBiometricRef, WebViewerPdfP
 
                 instancebio.Core.documentViewer.addEventListener('documentLoaded', () => {
                     console.log("encore")
+                    const signatureTool = documentViewer.getTool(Tools.ToolNames.SIGNATURE) as Core.Tools.SignatureCreateTool;
+                    console.log(user.mySignature)
+                    if (user.mySignature) {
+                        signatureTool.importSignatures([user.mySignature]);
+                    }
+                    documentViewer.setToolMode(signatureTool);
+
                     const webviewer = (document.getElementById("root")!).querySelector(".webviewer")
                     const shadowRoot = webviewer?.children[0].shadowRoot
                     const shadowRoot1 = webviewer?.children[1].shadowRoot
@@ -212,6 +226,26 @@ const WebViewerPdfBiometric = forwardRef<WebViewerPdfBiometricRef, WebViewerPdfP
                     }
                 })
 
+                async function extractAnnotationSignature(annotation: Annotations.Annotation, docViewer: DocumentViewer) {
+                    const canvas = document.createElement('canvas');
+                    const pageMatrix = docViewer.getDocument().getPageMatrix(annotation.PageNumber);
+                    canvas.height = annotation.Height;
+                    canvas.width = annotation.Width;
+                    const ctx = canvas.getContext('2d');
+                    ctx!.translate(-annotation.X, -annotation.Y);
+                    annotation.draw(ctx!, pageMatrix);
+                    canvas.toBlob(async (blob) => {
+                        const file = new File([blob!], 'signature.png', { type: 'image/png' });
+                        if (setSignature) {
+                            const fileBase64 = await fileToBase64(file);
+                            console.log(fileBase64)
+                            setSignature(fileBase64)
+                            user.mySignature = fileBase64;
+                            setUser(user)
+                        }
+                    });
+                }
+
                 instancebio.Core.documentViewer.addEventListener('annotationsLoaded', () => {
                     instancebio.Core.annotationManager.addEventListener('annotationChanged', async (annotationList) => {
                         for (const annotation of annotationList) {
@@ -228,10 +262,12 @@ const WebViewerPdfBiometric = forwardRef<WebViewerPdfBiometricRef, WebViewerPdfP
                                     type: 'application/pdf'
                                 });
                                 if (setSignedFile) {
-                                    setSignedFile(modifiedFile)
+                                    console.log(modifiedFile)
+                                    setSignedFile(forcePdfExtension(modifiedFile))
                                 }
-                                // const fileBase64 = await fileToBase64(modifiedFile!);
-                                // fileBase64
+                                if (user.mySignature == ""){
+                                    await extractAnnotationSignature(annotation, documentViewer)
+                                }
                             }
                         }
                     })

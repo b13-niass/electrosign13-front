@@ -34,7 +34,7 @@ export default function WebViewerPdf({ file, restrictedMode = false }: WebViewer
                 )
 
                 instance.UI.loadDocument(blob, { filename: file.name })
-
+                instance.UI.setZoomLevel('100%')
                 // 🎨 Personnalisation de l'interface
                 instance.UI.setTheme("light")
                 instance.UI.setLanguage("fr")

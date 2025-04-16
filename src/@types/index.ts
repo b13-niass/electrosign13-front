@@ -16,7 +16,8 @@ export type User = {
     fonction?: string
     fonctionObject?: Fonction
     rolesLibelle?: string[]
-    roles?: Role []
+    roles?: Role[]
+    active?: boolean
 }
 
 export type Role = {
@@ -33,18 +34,18 @@ export type Fonction = {
 }
 
 export type AddUser = {
-    id: string
+    id?: string
     prenom: string
     nom: string
     email: string
     password: string
     telephone?: string
-    photo?: string
+    photo?: string|File
     cni?: string
     fonctionId: number
     fonctionNom?: string
     roles: string[]
-    active: boolean
+    active?: boolean
 }
 
 export type Departement = {

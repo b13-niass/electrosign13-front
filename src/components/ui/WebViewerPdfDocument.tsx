@@ -1,17 +1,25 @@
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef, useState } from 'react'
 import WebViewer, { WebViewerInstance } from '@pdftron/webviewer'
-import { FileText } from "lucide-react"
+import { FileText } from 'lucide-react'
 import { useSessionUser } from '@/store/authStore'
+import { fileToBase64, forcePdfExtension } from '@/utils/fileManagement'
 
 interface WebViewerPdfProps {
     file?: File | null
     restrictedMode?: string
+    setSignedFile?: (file: File) => void
+    statusDemande?: boolean
 }
 
-export default function WebViewerPdfDocument({ file, restrictedMode = 'electronique' }: WebViewerPdfProps) {
+export default function WebViewerPdfDocument({
+    file,
+    restrictedMode = 'electronique',
+    setSignedFile,
+    statusDemande
+}: WebViewerPdfProps) {
     const viewers = useRef<HTMLDivElement>(null)
     const [isLoading, setIsLoading] = useState(true)
-    const { user } = useSessionUser();
+    const { user } = useSessionUser()
 
     useEffect(() => {
         if (!file || !viewers.current) return
@@ -25,23 +33,27 @@ export default function WebViewerPdfDocument({ file, restrictedMode = 'electroni
             reader.onload = async function () {
                 const arrayBuffer = reader.result as ArrayBuffer
 
-                const blob = new Blob([arrayBuffer], { type: "application/pdf" })
+                const blob = new Blob([arrayBuffer], {
+                    type: 'application/pdf',
+                })
 
                 const instance = await WebViewer(
                     {
-                        path: "/webviewer/public",
-       licenseKey: "demo:1742976837142:61288cf803000000000472f1cd0f0705d57cd6722e3aa3dc8ed87eef9c"
+                        path: '/webviewer/public',
+                        licenseKey:
+                            'demo:1742976837142:61288cf803000000000472f1cd0f0705d57cd6722e3aa3dc8ed87eef9c',
+                        fullAPI: true
                     },
-                    viewers.current!
+                    viewers.current!,
                 )
 
                 instance.UI.loadDocument(blob, { filename: file.name })
-                const { RubberStampCreateTool } = instance.Core.Tools;
+                const { RubberStampCreateTool } = instance.Core.Tools
                 // 🎨 Personnalisation de l'interface
-                instance.UI.setTheme("light")
-                instance.UI.setLanguage("fr")
+                instance.UI.setTheme('light')
+                instance.UI.setLanguage('fr')
                 instance.UI.disableElements([
-                    "tools-header", // ✅ Disables header toolbar
+                    'tools-header', // ✅ Disables header toolbar
                     'downloadButton',
                     'notesPanelToggle',
                     'printButton',
@@ -58,72 +70,101 @@ export default function WebViewerPdfDocument({ file, restrictedMode = 'electroni
                     'toolbarGroup-Forms',
                     'toolbarGroup-FillAndSign',
                     'indexPanel',
-                    'panToolButton'
-                ]);
+                    'panToolButton',
+                ])
                 setIsLoading(false)
 
-                function createSignatureButton(webviewer: HTMLElement, instance2: WebViewerInstance) {
-                    const signatureButton = document.createElement('button');
-                    signatureButton.className = 'Button active ToolButton Button modular-ui icon-only';
-                    signatureButton.setAttribute('data-element', 'signatureToolButton');
-                    signatureButton.setAttribute('aria-label', 'Créer une signature');
-                    signatureButton.type = 'button';
+                function createSignatureButton(
+                    webviewer: HTMLElement,
+                    instance2: WebViewerInstance,
+                ) {
+                    const signatureButton = document.createElement('button')
+                    signatureButton.className =
+                        'Button active ToolButton Button modular-ui icon-only'
+                    signatureButton.setAttribute(
+                        'data-element',
+                        'signatureToolButton',
+                    )
+                    signatureButton.setAttribute(
+                        'aria-label',
+                        'Créer une signature',
+                    )
+                    signatureButton.type = 'button'
 
                     // Create the icon div
-                    const iconDiv = document.createElement('div');
-                    iconDiv.className = 'Icon';
-                    iconDiv.setAttribute('aria-hidden', 'false');
+                    const iconDiv = document.createElement('div')
+                    iconDiv.className = 'Icon'
+                    iconDiv.setAttribute('aria-hidden', 'false')
 
-                    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-                    svg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
-                    svg.setAttribute('viewBox', '0 0 24 24');
+                    const svg = document.createElementNS(
+                        'http://www.w3.org/2000/svg',
+                        'svg',
+                    )
+                    svg.setAttribute('xmlns', 'http://www.w3.org/2000/svg')
+                    svg.setAttribute('viewBox', '0 0 24 24')
 
-                    const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
-                    const style = document.createElementNS('http://www.w3.org/2000/svg', 'style');
-                    style.textContent = '.cls-1{fill:#abb0c4;}';
-                    defs.appendChild(style);
-                    svg.appendChild(defs);
+                    const defs = document.createElementNS(
+                        'http://www.w3.org/2000/svg',
+                        'defs',
+                    )
+                    const style = document.createElementNS(
+                        'http://www.w3.org/2000/svg',
+                        'style',
+                    )
+                    style.textContent = '.cls-1{fill:#abb0c4;}'
+                    defs.appendChild(style)
+                    svg.appendChild(defs)
 
-                    const title = document.createElementNS('http://www.w3.org/2000/svg', 'title');
-                    title.textContent = 'icon - tool - stamp - line';
-                    svg.appendChild(title);
+                    const title = document.createElementNS(
+                        'http://www.w3.org/2000/svg',
+                        'title',
+                    )
+                    title.textContent = 'icon - tool - stamp - line'
+                    svg.appendChild(title)
 
                     const paths = [
-                        { d: "M4,20.5H20V22H4Z" },
-                        { d: "M19.27,15H4.74a.76.76,0,0,0-.75.75V19H20V16.26A.76.76,0,0,0,19.27,15Z" },
-                        { d: "M15.68,10.79a5,5,0,0,0,1.57-3.54,5.26,5.26,0,0,0-10.51,0,5.06,5.06,0,0,0,1.58,3.56,12.78,12.78,0,0,1,.82,1,7,7,0,0,1,.44,1.44H9v1.5h6v-1.5h-.58a6.08,6.08,0,0,1,.45-1.44A12.73,12.73,0,0,1,15.68,10.79ZM14.28,9.64c-.27.32-.59.7-.9,1.13A6.91,6.91,0,0,0,12.63,13H11.37a6.52,6.52,0,0,0-.76-2.18c-.31-.45-.65-.83-.91-1.15A3.25,3.25,0,0,1,8.56,7.25a3.44,3.44,0,1,1,6.88,0A3.35,3.35,0,0,1,14.28,9.64Z" }
-                    ];
+                        { d: 'M4,20.5H20V22H4Z' },
+                        {
+                            d: 'M19.27,15H4.74a.76.76,0,0,0-.75.75V19H20V16.26A.76.76,0,0,0,19.27,15Z',
+                        },
+                        {
+                            d: 'M15.68,10.79a5,5,0,0,0,1.57-3.54,5.26,5.26,0,0,0-10.51,0,5.06,5.06,0,0,0,1.58,3.56,12.78,12.78,0,0,1,.82,1,7,7,0,0,1,.44,1.44H9v1.5h6v-1.5h-.58a6.08,6.08,0,0,1,.45-1.44A12.73,12.73,0,0,1,15.68,10.79ZM14.28,9.64c-.27.32-.59.7-.9,1.13A6.91,6.91,0,0,0,12.63,13H11.37a6.52,6.52,0,0,0-.76-2.18c-.31-.45-.65-.83-.91-1.15A3.25,3.25,0,0,1,8.56,7.25a3.44,3.44,0,1,1,6.88,0A3.35,3.35,0,0,1,14.28,9.64Z',
+                        },
+                    ]
 
-                    paths.forEach(pathData => {
-                        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-                        path.setAttribute('d', pathData.d);
-                        path.setAttribute('class', 'cls-1');
-                        svg.appendChild(path);
-                    });
+                    paths.forEach((pathData) => {
+                        const path = document.createElementNS(
+                            'http://www.w3.org/2000/svg',
+                            'path',
+                        )
+                        path.setAttribute('d', pathData.d)
+                        path.setAttribute('class', 'cls-1')
+                        svg.appendChild(path)
+                    })
 
-                    iconDiv.appendChild(svg);
-                    signatureButton.appendChild(iconDiv);
+                    iconDiv.appendChild(svg)
+                    signatureButton.appendChild(iconDiv)
 
                     signatureButton.addEventListener('click', (event) => {
-                        event.preventDefault();
+                        event.preventDefault()
                         // event.stopPropagation();
-                        const docViewer = instance2.Core.documentViewer;
-                        const annotManager = docViewer.getAnnotationManager();
-                        const { Annotations } = instance2.Core;
+                        const docViewer = instance2.Core.documentViewer
+                        const annotManager = docViewer.getAnnotationManager()
+                        const { Annotations } = instance2.Core
 
-                        const pageNumber = 1;
-                        const x = 100;
-                        const y = 100; // Position Y sur la page
+                        const pageNumber = 1
+                        const x = 100
+                        const y = 100 // Position Y sur la page
 
                         // Créer un nouveau tampon RubberStamp
-                        const stampAnnot = new Annotations.StampAnnotation();
-                        stampAnnot.PageNumber = 1;
+                        const stampAnnot = new Annotations.StampAnnotation()
+                        stampAnnot.PageNumber = 1
 
                         // Définir la position et la taille
-                        stampAnnot.X = x;
-                        stampAnnot.Y = y;
-                        stampAnnot.Width = 350;
-                        stampAnnot.Height = 60;
+                        stampAnnot.X = x
+                        stampAnnot.Y = y
+                        stampAnnot.Width = 350
+                        stampAnnot.Height = 60
 
                         // Définir le contenu du tampon
                         const dateStr = new Date().toLocaleString('fr-FR', {
@@ -132,35 +173,87 @@ export default function WebViewerPdfDocument({ file, restrictedMode = 'electroni
                             second: '2-digit',
                             day: 'numeric',
                             month: 'long',
-                            year: 'numeric'
-                        });
+                            year: 'numeric',
+                        })
 
-                        stampAnnot.Subject = "SignatureP";
-                        stampAnnot.setStampText(`[Par ${user.prenom} ${user.nom} le] ${dateStr}`);
-                        annotManager.addAnnotation(stampAnnot);
+                        stampAnnot.Subject = 'SignatureP'
+                        stampAnnot.setStampText(
+                            `[Par ${user.prenom} ${user.nom} le] ${dateStr}`,
+                        )
+                        stampAnnot.setContents(
+                            `[Par ${user.prenom} ${user.nom} le] ${dateStr}`,
+                        )
 
-                        annotManager.redrawAnnotation(stampAnnot);
-                    });
-                    return signatureButton;
+                        stampAnnot.Icon = `[Par ${user.prenom} ${user.nom} le] ${dateStr}`
+
+                        annotManager.addAnnotation(stampAnnot)
+                        annotManager.registerAnnotationType('stamp', Annotations.StampAnnotation);
+                        annotManager.redrawAnnotation(stampAnnot)
+                        docViewer.refreshAll()
+                        instance.Core.documentViewer.updateView();
+
+                    })
+
+                    return signatureButton
                 }
 
-                instance.Core.documentViewer.addEventListener('documentLoaded', () => {
-                    const webviewer = (document.getElementById("root")!).querySelector(".webviewer")
-                    const shadowRoot = webviewer?.children[0].shadowRoot
-                    const headerGroupItem = shadowRoot?.querySelector(".GroupedItems")
+                instance.Core.documentViewer.addEventListener(
+                    'documentLoaded',
+                    () => {
+                        const webviewer = document
+                            .getElementById('root')!
+                            .querySelector('.webviewer')
+                        const shadowRoot = webviewer?.children[0].shadowRoot
+                        const headerGroupItem =
+                            shadowRoot?.querySelector('.GroupedItems')
 
-                    if (headerGroupItem) {
-                        const existingSignatureButton = headerGroupItem.querySelector('[data-element="signatureToolButton"]');
-                        if (!existingSignatureButton) {
-                            const signatureButton = createSignatureButton(webviewer as HTMLElement, instance);
-                            headerGroupItem.appendChild(signatureButton);
-                            console.log('Signature button added to header group');
+                        if (headerGroupItem && statusDemande) {
+                            const existingSignatureButton =
+                                headerGroupItem.querySelector(
+                                    '[data-element="signatureToolButton"]',
+                                )
+                            if (!existingSignatureButton) {
+                                const signatureButton = createSignatureButton(
+                                    webviewer as HTMLElement,
+                                    instance,
+                                )
+                                headerGroupItem.appendChild(signatureButton)
+                                console.log(
+                                    'Signature button added to header group',
+                                )
+                            } else {
+                                console.log('Signature button already exists')
+                            }
                         } else {
-                            console.log('Signature button already exists');
+                            console.warn('Could not find header group item')
                         }
-                    } else {
-                        console.warn('Could not find header group item');
-                    }
+                    },
+                )
+
+                instance.Core.documentViewer.addEventListener('annotationsLoaded', () => {
+                    instance.Core.annotationManager.addEventListener('annotationChanged', async (annotationList) => {
+                        for (const annotation of annotationList) {
+                            if(annotation.Subject === 'SignatureP'){
+                                console.log(annotation)
+                                const annotationManager = instance.Core.documentViewer.getAnnotationManager();
+                                const document = instance.Core.documentViewer.getDocument();
+                                const xfdfString = await annotationManager.exportAnnotations()
+                                const data = await document.getFileData({
+                                    xfdfString,
+                                    flatten: true,
+                                    includeAnnotations: true
+                                });
+                                const modifiedFile = new File([data], document.getFilename() || 'signed-document.pdf', {
+                                    type: 'application/pdf'
+                                });
+                                if (setSignedFile) {
+                                    setSignedFile(forcePdfExtension(modifiedFile))
+                                }
+                                // const fileBase64 = await fileToBase64(modifiedFile!);
+                                // console.log(fileBase64)
+                            }
+                        }
+                    })
                 })
 
             }
@@ -175,8 +268,12 @@ export default function WebViewerPdfDocument({ file, restrictedMode = 'electroni
                 <div className="w-20 h-20 mb-4 bg-gray-100 rounded-full flex items-center justify-center">
                     <FileText className="w-10 h-10 text-gray-400" />
                 </div>
-                <h3 className="text-lg font-medium mb-2">Prévisualisation PDF</h3>
-                <p className="text-sm text-gray-500">Aucun fichier PDF sélectionné</p>
+                <h3 className="text-lg font-medium mb-2">
+                    Prévisualisation PDF
+                </h3>
+                <p className="text-sm text-gray-500">
+                    Aucun fichier PDF sélectionné
+                </p>
             </div>
         )
     }

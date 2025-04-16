@@ -19,6 +19,8 @@ import { Checkbox } from "@/components/shadcn-ui/checkbox"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/shadcn-ui/avatar"
 import type { AddUser } from "@/@types"
 import { FonctionCombobox } from "./fonction-combobox"
+import fonctionServices from '@/services/FonctionServices'
+import roleServices from '@/services/RoleServices'
 
 // Schéma de validation simplifié
 const editUserFormSchema = z.object({
@@ -32,14 +34,6 @@ const editUserFormSchema = z.object({
 
 type EditUserFormValues = z.infer<typeof editUserFormSchema>
 
-// Liste des rôles disponibles
-const availableRoles = [
-    { id: "ADMIN", label: "Administrateur" },
-    { id: "USER", label: "Utilisateur" },
-    { id: "MANAGER", label: "Gestionnaire" },
-    { id: "VIEWER", label: "Lecteur" },
-]
-
 interface EditUserDialogProps {
     user: AddUser
     open: boolean
@@ -49,6 +43,8 @@ interface EditUserDialogProps {
 
 export function EditUserDialog({ user, open, onOpenChange, onSubmit }: EditUserDialogProps) {
     const [photoPreview, setPhotoPreview] = useState<string | null>(user.photo || null)
+    const [availableRoles, setAvailableRoles] = useState<{id: string, label: string}[]>([])
+    const [availableFonction, setAvailableFonction] = useState<{value: number, label: string}[]>([])
 
     const form = useForm<EditUserFormValues>({
         resolver: zodResolver(editUserFormSchema),
@@ -75,6 +71,22 @@ export function EditUserDialog({ user, open, onOpenChange, onSubmit }: EditUserD
         setPhotoPreview(user.photo || null)
     }, [user, form])
 
+    useEffect(() => {
+        const fetchInitData = async () => {
+            const resultFonction = await fonctionServices.getAll()
+            const resultRole = await roleServices.getAll()
+            if (resultFonction.status == 'OK'){
+                const fonctions = resultFonction.data.map(fonction => ({value: parseInt(fonction.id!), label: fonction.libelle!}))
+                setAvailableFonction(fonctions)
+            }
+            if (resultRole.status == 'OK'){
+                const roles = resultRole.data.map(role => ({id: role.libelle!, label: role.libelle!}))
+                setAvailableRoles(roles)
+            }
+        }
+        fetchInitData();
+    }, [])
+
     const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0]
         if (file) {
@@ -87,12 +99,10 @@ export function EditUserDialog({ user, open, onOpenChange, onSubmit }: EditUserD
     }
 
     const handleSubmit = (values: EditUserFormValues) => {
-        // Créer un utilisateur mis à jour avec les valeurs du formulaire
         const updatedUser: AddUser = {
             ...user,
             ...values,
             photo: photoPreview || user.photo,
-            // Si le mot de passe est vide, conserver l'ancien
             password: values.password ? values.password : user.password,
         }
 
@@ -101,7 +111,7 @@ export function EditUserDialog({ user, open, onOpenChange, onSubmit }: EditUserD
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[500px]">
+            <DialogContent className="sm:max-w-[700px]">
                 <DialogHeader>
                     <DialogTitle>Modifier l&apos;utilisateur</DialogTitle>
                     <DialogDescription>Modifiez les informations de l&apos;utilisateur.</DialogDescription>
@@ -163,19 +173,19 @@ export function EditUserDialog({ user, open, onOpenChange, onSubmit }: EditUserD
                                 )}
                             />
 
-                            <FormField
-                                control={form.control}
-                                name="password"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Mot de passe</FormLabel>
-                                        <FormControl>
-                                            <Input type="password" placeholder="Laisser vide pour conserver l'ancien" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
+                            {/*<FormField*/}
+                            {/*    control={form.control}*/}
+                            {/*    name="password"*/}
+                            {/*    render={({ field }) => (*/}
+                            {/*        <FormItem>*/}
+                            {/*            <FormLabel>Mot de passe</FormLabel>*/}
+                            {/*            <FormControl>*/}
+                            {/*                <Input type="password" placeholder="Laisser vide pour conserver l'ancien" {...field} />*/}
+                            {/*            </FormControl>*/}
+                            {/*            <FormMessage />*/}
+                            {/*        </FormItem>*/}
+                            {/*    )}*/}
+                            {/*/>*/}
 
                             <FormField
                                 control={form.control}
@@ -183,7 +193,7 @@ export function EditUserDialog({ user, open, onOpenChange, onSubmit }: EditUserD
                                 render={({ field }) => (
                                     <FormItem className="flex flex-col">
                                         <FormLabel>Fonction *</FormLabel>
-                                        <FonctionCombobox value={field.value} onChange={field.onChange} />
+                                        <FonctionCombobox fonctions={availableFonction} value={field.value} onChange={field.onChange} />
                                         <FormMessage />
                                     </FormItem>
                                 )}

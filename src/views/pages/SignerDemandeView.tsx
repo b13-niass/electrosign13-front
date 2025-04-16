@@ -1,38 +1,43 @@
 import { useEffect, useRef, useState } from 'react'
-import { Check, FileText, Pen, ThumbsUp } from "lucide-react"
-import { useParams, useNavigate } from "react-router-dom"
-import { toast } from "sonner"
+import { Check, FileText, Pen, ThumbsUp } from 'lucide-react'
+import { useParams, useNavigate } from 'react-router-dom'
+import { toast } from 'sonner'
 
-import { Label } from "@/components/shadcn-ui/label"
-import { RadioGroup, RadioGroupItem } from "@/components/shadcn-ui/radio-group"
-import { cn } from "@/lib/utils"
-import { Button as ButtonDefault } from "@/components/ui/Button"
-import { useSessionUser } from "@/store/authStore"
-import type { SignatureRequest, SignatureStatus } from "@/@types"
-import demandeServices from "@/services/DemandeService"
+import { Label } from '@/components/shadcn-ui/label'
+import { RadioGroup, RadioGroupItem } from '@/components/shadcn-ui/radio-group'
+import { cn } from '@/lib/utils'
+import { Button as ButtonDefault } from '@/components/ui/Button'
+import { useSessionUser } from '@/store/authStore'
+import type { SignatureRequest, SignatureStatus } from '@/@types'
+import demandeServices, { SignerDemande } from '@/services/DemandeService'
 import { base64ToFile, fileToBase64 } from '@/utils/fileManagement'
-import WebViewerPdfDocument from "@/components/ui/WebViewerPdfDocument"
-import WebViewerPdfBiometric, { WebViewerPdfBiometricRef } from '@/components/ui/WebViewerPdfBiometric'
+import WebViewerPdfDocument from '@/components/ui/WebViewerPdfDocument'
+import WebViewerPdfBiometric, {
+    WebViewerPdfBiometricRef,
+} from '@/components/ui/WebViewerPdfBiometric'
 import { string } from 'zod'
 
-type SignatureType = "biometrique" | "electronique"
+type SignatureType = 'biometrique' | 'electronique'
 
 export default function SignerDemandeView() {
-    const [signatureType, setSignatureType] = useState<SignatureType>("electronique")
+    const [signatureType, setSignatureType] =
+        useState<SignatureType>('electronique')
     const [isLoading, setIsLoading] = useState(true)
     const [isSigning, setIsSigning] = useState(false)
     const [isApproving, setIsApproving] = useState(false)
+    const [isRejecting, setIsRejecting] = useState(false)
     const [demande, setDemande] = useState<SignatureRequest | null>(null)
     const [documentFile, setDocumentFile] = useState<File | null>(null)
     const { documentId } = useParams()
-    const { user } = useSessionUser()
-    const [userSignature, setUserSignature] = useState<string>("")
-    const [signedFile, setSignedFile] = useState<File|null>(null)
+    const { user, setUser } = useSessionUser()
+    // const [userSignature, setUserSignature] = useState<string>(user.mySignature != undefined ? user.mySignature: '')
+    const [signedFile, setSignedFile] = useState<File | null>(null)
     const navigate = useNavigate()
     const webViewerPdfBiometricRef = useRef<WebViewerPdfBiometricRef>(null)
     const isSender = demande?.sender?.id === user?.id
     const [isCurrentSigner, setIsCurrentSigner] = useState<boolean>(false)
-    const [isCurrentApprobateur, setIsCurrentApprobateur] = useState<boolean>(false)
+    const [isCurrentApprobateur, setIsCurrentApprobateur] =
+        useState<boolean>(false)
 
     useEffect(() => {
         const fetchData = async () => {
@@ -40,23 +45,35 @@ export default function SignerDemandeView() {
             setIsLoading(true)
             try {
                 // Récupérer les informations de la demande
-                const demandeResponse = await demandeServices.getDemandeById(documentId)
+                const demandeResponse =
+                    await demandeServices.getDemandeById(documentId)
                 if (demandeResponse.data != null) {
                     setDemande(demandeResponse.data)
                     setIsCurrentSigner(demandeResponse.data.currentUserSigner!)
-                    setIsCurrentApprobateur(demandeResponse.data.currentUserApprobateur!)
+                    setIsCurrentApprobateur(
+                        demandeResponse.data.currentUserApprobateur!,
+                    )
                     // Récupérer le document PDF
-                    const documentResponse = await demandeServices.getDocumentByDemandeId(documentId)
+                    const documentResponse =
+                        await demandeServices.getDocumentByDemandeId(documentId)
                     if (documentResponse.data) {
                         // Créer un objet File à partir du Blob
-                        const contenuBase64 = documentResponse.data.contenuBase64!
-                        const file = base64ToFile(contenuBase64, documentResponse.data.nom!, "application/pdf")
-                            setDocumentFile(file)
+                        const contenuBase64 =
+                            documentResponse.data.contenuBase64!
+                        const file = base64ToFile(
+                            contenuBase64,
+                            documentResponse.data.nom!,
+                            'application/pdf',
+                        )
+                        setDocumentFile(file)
                     }
                 }
             } catch (error) {
-                console.error("Erreur lors de la récupération des données:", error)
-                toast.error("Impossible de charger la demande ou le document")
+                console.error(
+                    'Erreur lors de la récupération des données:',
+                    error,
+                )
+                toast.error('Impossible de charger la demande ou le document')
             } finally {
                 setIsLoading(false)
             }
@@ -82,17 +99,19 @@ export default function SignerDemandeView() {
 
         setIsSigning(true)
         try {
-            // if (webViewerPdfBiometricRef.current){
-            //     await webViewerPdfBiometricRef.current.getPdfFile()
-            // }
-            // Appel à l'API pour signer le document
-            // await demandeServices.signerDemande(id)
-            // toast.success("Document signé avec succès")
-            // navigate("/demandes") // Redirection vers la liste des demandes
-
+            const demandeSigner : SignerDemande = {
+                demandeId: documentId,
+                file: signedFile!,
+                signature: ""
+            }
+            // console.log(signedFile)
+            const result = await demandeServices.signerDemande(demandeSigner)
+            console.log(result)
+            toast.success("Document signé avec succès")
+            navigate("/demandes")
         } catch (error) {
-            console.error("Erreur lors de la signature:", error)
-            toast.error("Impossible de signer le document")
+            console.error('Erreur lors de la signature:', error)
+            toast.error('Impossible de signer le document')
         } finally {
             setIsSigning(false)
         }
@@ -103,10 +122,10 @@ export default function SignerDemandeView() {
 
         setIsApproving(true)
         try {
-            // Appel à l'API pour approuver le document
-            // await demandeServices.approuverDemande(id)
-            toast.success("Document approuvé avec succès")
-            navigate("/demandes") // Redirection vers la liste des demandes
+            const result = await demandeServices.approuverDemande(documentId);
+            console.log(result)
+            toast.success('Document approuvé avec succès')
+            navigate('/demandes') // Redirection vers la liste des demandes
         } catch (error) {
             console.error("Erreur lors de l'approbation:", error)
             toast.error("Impossible d'approuver le document")
@@ -115,8 +134,26 @@ export default function SignerDemandeView() {
         }
     }
 
-    const onUserSetSignature = () => {
-        setUserSignature("")
+    const handleRejeterDocument = async () => {
+        if (!documentId) return
+
+        setIsRejecting(true)
+        try {
+            const result = await demandeServices.rejeterDemande(documentId);
+            console.log(result);
+            toast.success('Document approuvé avec succès')
+            navigate('/demandes') // Redirection vers la liste des demandes
+        } catch (error) {
+            console.error("Erreur lors de l'approbation:", error)
+            toast.error("Impossible d'approuver le document")
+        } finally {
+            setIsRejecting(false)
+        }
+    }
+    const onUserSetSignature = (newSIgnature: string) => {
+        // setUserSignature(newSIgnature)
+        user.mySignature = newSIgnature
+        setUser(user)
     }
     const onGetSignedFile = (file: File) => {
         setSignedFile(file)
@@ -134,12 +171,15 @@ export default function SignerDemandeView() {
         return (
             <div className="flex flex-col items-center justify-center h-[calc(100vh-200px)]">
                 <FileText className="h-16 w-16 text-muted-foreground mb-4" />
-                <h2 className="text-xl font-semibold mb-2">Demande non trouvée</h2>
+                <h2 className="text-xl font-semibold mb-2">
+                    Demande non trouvée
+                </h2>
                 <p className="text-muted-foreground mb-4">
-                    La demande que vous recherchez n&apos;existe pas ou a été supprimée.
+                    La demande que vous recherchez n&apos;existe pas ou a été
+                    supprimée.
                 </p>
                 <ButtonDefault
-                    onClick={() => navigate("/demandes")}
+                    onClick={() => navigate('/demandes')}
                     className="bg-blue-500 text-white hover:bg-blue-400 hover:text-white hover:border-none hover:ring-0"
                 >
                     Retour aux demandes
@@ -153,28 +193,32 @@ export default function SignerDemandeView() {
             {/* En-tête avec les informations de la demande */}
             <div className="bg-white p-4 rounded-lg shadow-sm mb-4">
                 <h1 className="text-xl font-bold mb-2">{demande.titre}</h1>
-                <p className="text-muted-foreground mb-4">{demande.description}</p>
+                <p className="text-muted-foreground mb-4">
+                    {demande.description}
+                </p>
                 <div className="flex flex-wrap gap-4 text-sm">
                     <div>
-                        <span className="font-medium">Statut:</span>{" "}
+                        <span className="font-medium">Statut:</span>{' '}
                         <span
                             className={cn(
-                                "px-2 py-1 rounded-full text-xs",
-                                demande.status === "SIGNEE"
-                                    ? "bg-green-100 text-green-800"
-                                    : demande.status === "REFUSEE"
-                                        ? "bg-red-100 text-red-800"
-                                        : "bg-yellow-100 text-yellow-800",
+                                'px-2 py-1 rounded-full text-xs',
+                                demande.status === 'SIGNEE'
+                                    ? 'bg-green-100 text-green-800'
+                                    : demande.status === 'REFUSEE'
+                                      ? 'bg-red-100 text-red-800'
+                                      : 'bg-yellow-100 text-yellow-800',
                             )}
                         >
-              {formatStatus(demande.status)}
-            </span>
+                            {formatStatus(demande.status)}
+                        </span>
                     </div>
                     <div>
-                        <span className="font-medium">Date limite:</span> {formatDate(demande.dateLimite)}
+                        <span className="font-medium">Date limite:</span>{' '}
+                        {formatDate(demande.dateLimite)}
                     </div>
                     <div>
-                        <span className="font-medium">Créé par:</span> {demande.sender?.prenom} {demande.sender?.nom}
+                        <span className="font-medium">Créé par:</span>{' '}
+                        {demande.sender?.prenom} {demande.sender?.nom}
                     </div>
                 </div>
             </div>
@@ -204,26 +248,50 @@ export default function SignerDemandeView() {
                             <div className="p-4 flex-grow">
                                 {isCurrentSigner ? (
                                     <>
-                                        <RadioGroup value={signatureType} onValueChange={handleSignatureTypeChange} className="space-y-4">
+                                        <RadioGroup
+                                            value={signatureType}
+                                            onValueChange={
+                                                handleSignatureTypeChange
+                                            }
+                                            className="space-y-4"
+                                        >
                                             <div className="flex items-start space-x-3 space-y-0">
-                                                <RadioGroupItem value="biometrique" id="biometrique" />
+                                                <RadioGroupItem
+                                                    value="biometrique"
+                                                    id="biometrique"
+                                                    onClick={() => setSignedFile(null)}
+                                                />
                                                 <div className="grid gap-1.5">
-                                                    <Label htmlFor="biometrique" className="font-medium">
+                                                    <Label
+                                                        htmlFor="biometrique"
+                                                        className="font-medium"
+                                                    >
                                                         Biométrique
                                                     </Label>
                                                     <p className="text-sm text-muted-foreground">
-                                                        Signature manuscrite capturée sur un appareil tactile
+                                                        Signature manuscrite
+                                                        capturée sur un appareil
+                                                        tactile
                                                     </p>
                                                 </div>
                                             </div>
                                             <div className="flex items-start space-x-3 space-y-0">
-                                                <RadioGroupItem value="electronique" id="electronique" />
+                                                <RadioGroupItem
+                                                    value="electronique"
+                                                    id="electronique"
+                                                    onClick={() => setSignedFile(null)}
+                                                />
                                                 <div className="grid gap-1.5">
-                                                    <Label htmlFor="electronique" className="font-medium">
+                                                    <Label
+                                                        htmlFor="electronique"
+                                                        className="font-medium"
+                                                    >
                                                         Électronique
                                                     </Label>
                                                     <p className="text-sm text-muted-foreground">
-                                                        Signature électronique avec certificat numérique
+                                                        Signature électronique
+                                                        avec certificat
+                                                        numérique
                                                     </p>
                                                 </div>
                                             </div>
@@ -232,9 +300,14 @@ export default function SignerDemandeView() {
                                 ) : (
                                     <div className="space-y-4">
                                         <p className="text-sm">
-                                            Vous êtes invité à approuver ce document avant qu&apos;il ne soit envoyé aux signataires.
+                                            Vous êtes invité à approuver ce
+                                            document avant qu&apos;il ne soit
+                                            envoyé aux signataires.
                                         </p>
-                                        <p className="text-sm">Veuillez examiner attentivement le document avant de l&apos;approuver.</p>
+                                        <p className="text-sm">
+                                            Veuillez examiner attentivement le
+                                            document avant de l&apos;approuver.
+                                        </p>
                                     </div>
                                 )}
                             </div>
@@ -243,21 +316,30 @@ export default function SignerDemandeView() {
                                 {isCurrentSigner ? (
                                     <ButtonDefault
                                         onClick={handleSignDocument}
-                                        disabled={isSigning}
+                                        disabled={isSigning || signedFile == null}
                                         loading={isSigning}
                                         className="bg-blue-500 w-full text-white hover:bg-blue-400 hover:text-white hover:border-none hover:ring-0"
                                     >
                                         Signer le document
                                     </ButtonDefault>
-                                ) : (
+                                ) : (<div className="flex gap-3">
                                     <ButtonDefault
                                         onClick={handleApproveDocument}
                                         disabled={isApproving}
                                         loading={isApproving}
                                         className="bg-green-500 w-full text-white hover:bg-green-400 hover:text-white hover:border-none hover:ring-0"
                                     >
-                                        Approuver le document
+                                        Approuver
                                     </ButtonDefault>
+                                    <ButtonDefault
+                                            onClick={handleRejeterDocument}
+                                        disabled={isApproving}
+                                        loading={isApproving}
+                                        className="bg-red-500 w-full text-white hover:bg-red-400 hover:text-white hover:border-none hover:ring-0"
+                                    >
+                                        Rejeter
+                                    </ButtonDefault>
+                                </div>
                                 )}
                             </div>
                         </div>
@@ -267,30 +349,34 @@ export default function SignerDemandeView() {
                 {/* Panneau de droite - Visualiseur PDF */}
                 <div
                     className={cn(
-                        "bg-white rounded-lg shadow-sm flex flex-col",
-                        isCurrentSigner || isCurrentApprobateur ? "w-2/3" : "w-full",
+                        'bg-white rounded-lg shadow-sm flex flex-col',
+                        isCurrentSigner || isCurrentApprobateur
+                            ? 'w-2/3'
+                            : 'w-full',
                     )}
                 >
                     <div className="p-4 border-b">
-                        <h2 className="text-lg font-semibold">{demande.titre || "Document"}</h2>
+                        <h2 className="text-lg font-semibold">
+                            {demande.titre || 'Document'}
+                        </h2>
                     </div>
                     <div className="flex-grow">
                         <div className="h-full w-full">
-                            {
-                                signatureType === "electronique"
-                                ?  <WebViewerPdfDocument
-                                        file={documentFile}
-                                        restrictedMode= "electronique"
-                                    />
-                                    :  <WebViewerPdfBiometric
-                                        ref={webViewerPdfBiometricRef}
-                                        file={documentFile}
-                                        signature={userSignature}
-                                        setSignature={onUserSetSignature}
-                                        setSignedFile={onGetSignedFile}
-                                    />
-                            }
-
+                            {signatureType === 'electronique' ? (
+                                <WebViewerPdfDocument
+                                    file={documentFile}
+                                    restrictedMode="electronique"
+                                    setSignedFile={onGetSignedFile}
+                                    statusDemande={demande.currentUserSigner}
+                                />
+                            ) : (
+                                <WebViewerPdfBiometric
+                                    ref={webViewerPdfBiometricRef}
+                                    file={documentFile}
+                                    setSignature={onUserSetSignature}
+                                    setSignedFile={onGetSignedFile}
+                                />
+                            )}
                         </div>
                     </div>
                 </div>
@@ -302,18 +388,18 @@ export default function SignerDemandeView() {
 // Fonction utilitaire pour formater le statut
 function formatStatus(status: SignatureStatus): string {
     switch (status) {
-        case "EN_ATTENTE_APPROBATION":
+        case 'EN_ATTENTE_APPROBATION':
             return "En attente d'approbation"
-        case "APPROUVEE":
-            return "Approuvée"
-        case "EN_ATTENTE_SIGNATURE":
-            return "En attente de signature"
-        case "SIGNEE":
-            return "Signée"
-        case "REFUSEE":
-            return "Refusée"
-        case "ANNULEE":
-            return "Annulée"
+        case 'APPROUVEE':
+            return 'Approuvée'
+        case 'EN_ATTENTE_SIGNATURE':
+            return 'En attente de signature'
+        case 'SIGNEE':
+            return 'Signée'
+        case 'REFUSEE':
+            return 'Refusée'
+        case 'ANNULEE':
+            return 'Annulée'
         default:
             return status
     }
@@ -321,8 +407,11 @@ function formatStatus(status: SignatureStatus): string {
 
 // Fonction utilitaire pour formater la date
 function formatDate(date: Date | string): string {
-    if (!date) return ""
+    if (!date) return ''
     const d = new Date(date)
-    return d.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" })
+    return d.toLocaleDateString('fr-FR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+    })
 }
-
