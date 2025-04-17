@@ -3,7 +3,6 @@ import { ApiResponseFormat, DocumentBase64, SignatureRequest } from '@/@types'
 import endpointConfig from '@/configs/endpoint.config'
 import { format } from 'date-fns'
 
-
 export type DemandeCredentials = {
     file: File,
     signataires: UserDemande[],

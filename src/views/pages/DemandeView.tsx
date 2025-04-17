@@ -37,6 +37,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { toast } from "sonner"
 import type { SignatureRequest, SignatureStatus } from "@/@types"
 import DemandeService from "@/services/DemandeService"
+import documentServices from '@/services/DocumentServices'
 
 // Fonction pour obtenir le statut traduit
 function getStatusLabel(status: SignatureStatus): string {
@@ -308,6 +309,38 @@ export const columns: ColumnDef<SignatureRequest>[] = [
             const canSign = document.isCurrentUserSigner && document.status === "EN_ATTENTE_SIGNATURE"
             const canApprove = document.isCurrentUserApprobateur && document.status === "EN_ATTENTE_APPROBATION"
 
+            const handleDownloadFile = async (idDemande: string) => {
+                const resultFirst = await documentServices.getSignedDocumentsForDownload(idDemande);
+                if (resultFirst.status == "OK"){
+                    const response = await documentServices.downloadDocument(resultFirst.data[0].id+"");
+                    console.log(response)
+                    // // Créer une URL temporaire à partir du blob
+                    // const blob = new Blob([response.data]);
+                    // const url = window.URL.createObjectURL(blob);
+                    //
+                    // // Utiliser une approche compatible avec React/TypeScript
+                    // const downloadLink = window.document.createElement('a');
+                    // downloadLink.href = url;
+                    // downloadLink.download = `doc_${idDemande}.pdf`;
+                    // let filename = 'contrat de prestation.pdf';
+                    //
+                    // filename = "document";
+                    //
+                    // // Create a temporary link element
+                    // const link = window.document.createElement('a');
+                    // link.href = url;
+                    // link.download = filename;
+                    //
+                    // // Append to the document, click it, and remove it
+                    // window.document.body.appendChild(link);
+                    // link.click();
+                    //
+                    // // Clean up
+                    // window.URL.revokeObjectURL(url);
+                    // window.document.body.removeChild(link);
+                }
+            }
+
             return (
                 <div className="flex items-center gap-2">
                     <Link to={`/signer-demande/${document.id}`}>
@@ -329,7 +362,7 @@ export const columns: ColumnDef<SignatureRequest>[] = [
                             {canSign ? "Signer" : canApprove ? "Approuver" : <Eye className="h-4 w-4" />}
                         </Button>
                     </Link>
-                    <Button variant="ghost" size="icon" title="Télécharger le document">
+                    <Button disabled={row.original.status != "SIGNEE"} onClick={() => handleDownloadFile(row.original.id + "")} variant="ghost" size="icon" title="Télécharger le document">
                         <Download className="h-4 w-4" />
                     </Button>
                 </div>
@@ -495,14 +528,14 @@ function DemandeTable({ data }: { data: SignatureRequest[] }) {
                         </DropdownMenuContent>
                     </DropdownMenu>
 
-                    <Button
-                        variant="outline"
-                        onClick={downloadSelected}
-                        disabled={table.getFilteredSelectedRowModel().rows.length === 0}
-                    >
-                        <Download className="mr-2 h-4 w-4" />
-                        Télécharger
-                    </Button>
+                    {/*<Button*/}
+                    {/*    variant="outline"*/}
+                    {/*    onClick={downloadSelected}*/}
+                    {/*    disabled={table.getFilteredSelectedRowModel().rows.length === 0}*/}
+                    {/*>*/}
+                    {/*    <Download className="mr-2 h-4 w-4" />*/}
+                    {/*    Télécharger*/}
+                    {/*</Button>*/}
                 </div>
             </div>
 

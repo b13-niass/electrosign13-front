@@ -23,6 +23,11 @@ const endpointConfig = {
     rejeterDemande: '/private/demandes/:idDemande/rejeter',
     desactiverUser: '/private/users/desactiverUser/:idUser',
     activerUser: '/private/users/activerUser/:idUser',
+    archiveDocuments: '/private/demandes/archiveDocuments',
+    getArchiveStats: '/private/demandes/getArchiveStats',
+    getSignedDocumentsForDownload: '/private/documents/demande/:demandeId/download-info',
+    downloadDocument: '/private/documents/download/:documentId',
+
 }
 
 export default endpointConfig

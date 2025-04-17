@@ -286,7 +286,7 @@ export default function SignerDemandeView() {
                                                         htmlFor="electronique"
                                                         className="font-medium"
                                                     >
-                                                        Électronique
+                                                        Tampon
                                                     </Label>
                                                     <p className="text-sm text-muted-foreground">
                                                         Signature électronique
